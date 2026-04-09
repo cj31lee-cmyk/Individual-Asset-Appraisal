@@ -98,7 +98,7 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {readonlyField("매입 예상가 (회수가)", data.estimatedPurchase)}
           {numField("할인율 (%)", "discountRate")}
-          {readonlyField("채권매입가 (원리금×할인율)", data.loanPurchasePrice, true)}
+          {readonlyField("채권매입가 (회수예상가×할인율)", data.loanPurchasePrice, true)}
           {readonlyField("근저당설정비용 (0.4%)", data.mortgageSetupCost)}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

@@ -35,10 +35,15 @@ export function PurchaseInfoSection({ data, onChange }: Props) {
       next.senior110 = Math.round((value as number) * (110 / 120));
     }
 
+    // 이율 입력 시 → 연체이율 = 이율 + 3%
+    if (key === "interestRate") {
+      next.overdueRate = (value as number) + 3;
+    }
+
     // 대출잔액 + 이율 + 연체이율 + 연체일수 → 이자 자동계산
-    if (key === "interestRate" || key === "overdueRate" || key === "overdueDays") {
+    if (key === "interestRate" || key === "overdueRate" || key === "overdueDays" || key === "loanBalance") {
       const rate = key === "interestRate" ? (value as number) : next.interestRate;
-      const overdueRate = key === "overdueRate" ? (value as number) : next.overdueRate;
+      const overdueRate = key === "interestRate" ? (value as number) + 3 : (key === "overdueRate" ? (value as number) : next.overdueRate);
       const overdueDays = key === "overdueDays" ? (value as number) : next.overdueDays;
       if (next.loanBalance > 0 && overdueDays > 0) {
         const normalInterest = Math.round((next.loanBalance * (rate / 100)) / 365 * overdueDays);

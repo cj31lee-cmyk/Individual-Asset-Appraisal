@@ -127,7 +127,7 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
           {readonlyField("회수예상가 (매입예상가-선순위)", data.purchaseMinusSenior, true)}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {readonlyField("최종매입가 (채권매입가+비용)", data.finalPurchasePrice, true)}
+          {readonlyField("최종매입가 (회수예상가×할인율)", data.finalPurchasePrice, true)}
         </div>
       </CardContent>
     </Card>

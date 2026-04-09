@@ -112,7 +112,7 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
             {numField("관리비·출장비 (만원)", "managementCost", "60")}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1">
-            기본: 인건비 월10만 × {data.holdingMonths}개월 / 관리비 월5만 × {data.holdingMonths}개월
+            기본: 0원 (필요 시 직접 입력)
           </p>
         </div>
 

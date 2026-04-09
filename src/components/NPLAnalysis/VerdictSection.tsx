@@ -55,11 +55,11 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
       verdict = "reject";
       verdictText = "매입 불가";
       verdictDescription = "매입비용이 산출되지 않았습니다. 입력값을 확인해주세요.";
-    } else if (roi >= 15) {
+    } else if (roi >= 10) {
       verdict = "buy";
       verdictText = "매입 추천";
       verdictDescription = `${params.holdingMonths}개월 보유 후 경매 시 예상 수익률 ${roi.toFixed(1)}%. 본 채권은 매입을 적극 검토할 만합니다.`;
-    } else if (roi >= 5) {
+    } else if (roi >= 0) {
       verdict = "caution";
       verdictText = "조건부 매입";
       verdictDescription = `${params.holdingMonths}개월 보유 후 예상 수익률 ${roi.toFixed(1)}%. 수익성은 있으나 할인율 조정 또는 비용 절감이 필요합니다.`;
@@ -187,7 +187,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
             <div className="bg-card/80 rounded-lg p-3 text-center">
               <p className="text-xs text-muted-foreground mb-1">수익률</p>
               <p className={`text-lg font-black tabular-nums ${
-                analysis.roi >= 15 ? "text-emerald-600" : analysis.roi >= 5 ? "text-amber-600" : "text-red-600"
+                analysis.roi >= 10 ? "text-emerald-600" : analysis.roi >= 0 ? "text-amber-600" : "text-red-600"
               }`}>
                 {analysis.roi.toFixed(1)}
                 <span className="text-xs font-normal ml-0.5">%</span>
@@ -289,7 +289,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
             <div className="flex justify-between items-center mb-1.5">
               <span className="text-xs text-muted-foreground">투자수익률 (ROI)</span>
               <span className={`text-sm font-bold tabular-nums ${
-                analysis.roi >= 15 ? "text-emerald-600" : analysis.roi >= 5 ? "text-amber-600" : "text-red-600"
+                analysis.roi >= 10 ? "text-emerald-600" : analysis.roi >= 0 ? "text-amber-600" : "text-red-600"
               }`}>
                 {analysis.roi.toFixed(1)}%
               </span>
@@ -297,7 +297,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
             <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  analysis.roi >= 15 ? "bg-emerald-500" : analysis.roi >= 5 ? "bg-amber-500" : "bg-red-500"
+                  analysis.roi >= 10 ? "bg-emerald-500" : analysis.roi >= 0 ? "bg-amber-500" : "bg-red-500"
                 }`}
                 style={{ width: `${Math.min(Math.max(analysis.roi, 0), 50) * 2}%` }}
               />

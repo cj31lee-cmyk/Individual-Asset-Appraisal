@@ -18,7 +18,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
   const analysis = useMemo(() => {
     const principalInterest = purchaseInfo.principalInterest;
     const discountRate = priceAnalysis.discountRate;
-    const loanPurchasePrice = priceAnalysis.loanPurchasePrice; // 채권매입가 (원리금 × 할인율)
+    const loanPurchasePrice = priceAnalysis.loanPurchasePrice; // 채권매입가 (회수예상가 × 할인율)
     const analysisCost = priceAnalysis.totalCost; // 분석비용 (근저당+감평+경매)
     const finalPurchasePrice = priceAnalysis.finalPurchasePrice; // 최종매입가 (채권매입가+분석비용)
 
@@ -216,7 +216,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
             <span className="calc-value">{analysis.discountRate}%</span>
           </div>
           <div className="calc-row">
-            <span className="calc-label">① 채권매입가 (원리금 × 할인율)</span>
+            <span className="calc-label">① 채권매입가 (회수예상가 × 할인율)</span>
             <span className="calc-value font-semibold">{formatNum(analysis.loanPurchasePrice)} 만원</span>
           </div>
           <div className="calc-row">

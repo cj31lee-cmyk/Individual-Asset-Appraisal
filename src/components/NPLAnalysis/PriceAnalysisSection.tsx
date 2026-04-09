@@ -45,10 +45,9 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
     // 회수예상가 = 매입예상가 - 선순위110%
     next.purchaseMinusSenior = next.estimatedPurchase - purchaseInfo.senior110;
 
-    // 채권매입가 = 원리금 × 할인율
-    const principalInterest = purchaseInfo.principalInterest;
+    // 채권매입가 = 회수예상가 × 할인율
     const discountRate = next.discountRate > 0 ? next.discountRate : 0;
-    next.loanPurchasePrice = Math.round(principalInterest * discountRate / 100);
+    next.loanPurchasePrice = Math.round(next.purchaseMinusSenior * discountRate / 100);
 
     // 최종매입가 = 채권매입가 + 비용합계
     next.finalPurchasePrice = next.loanPurchasePrice + next.totalCost;
@@ -99,7 +98,7 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {readonlyField("매입 예상가 (회수가)", data.estimatedPurchase)}
           {numField("할인율 (%)", "discountRate")}
-          {readonlyField("채권매입가 (원리금×할인율)", data.loanPurchasePrice, true)}
+          {readonlyField("채권매입가 (회수예상가×할인율)", data.loanPurchasePrice, true)}
           {readonlyField("근저당설정비용 (0.4%)", data.mortgageSetupCost)}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

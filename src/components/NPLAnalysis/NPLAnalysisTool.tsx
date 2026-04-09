@@ -1,10 +1,12 @@
 import { useState } from "react";
-import type { CaseInfo, RightsItem, ComparableCase, AnalysisParams } from "./types";
+import type { CaseInfo, RightsItem, ComparableCase, AnalysisParams, PurchaseInfo, PriceAnalysisInfo } from "./types";
 import { CaseInfoSection } from "./CaseInfoSection";
 import { RightsSection } from "./RightsSection";
 import { ComparablesSection } from "./ComparablesSection";
 import { ParamsSection } from "./ParamsSection";
 import { ResultSection } from "./ResultSection";
+import { PurchaseInfoSection } from "./PurchaseInfoSection";
+import { PriceAnalysisSection } from "./PriceAnalysisSection";
 import { useNPLCalculation } from "./useNPLCalculation";
 import { Landmark } from "lucide-react";
 
@@ -27,6 +29,38 @@ export function NPLAnalysisTool() {
     evictionCost: 300,
   });
 
+  const [purchaseInfo, setPurchaseInfo] = useState<PurchaseInfo>({
+    seller: "",
+    productNumber: "",
+    name: "",
+    address: "",
+    loanBalance: 0,
+    interest: 0,
+    principalInterest: 0,
+    legalCost: 0,
+    seniorMaxAmount: 0,
+    senior110: 0,
+    seniorPrincipal: 0,
+    interestRate: 0,
+    overdueRate: 0,
+    overdueDays: 0,
+    remarks: "",
+  });
+
+  const [priceAnalysis, setPriceAnalysis] = useState<PriceAnalysisInfo>({
+    interestUntilDividend: 0,
+    actualTransPrice: 0,
+    kbPrice: 0,
+    bidRate: 0,
+    estimatedPurchase: 0,
+    mortgageSetupCost: 0,
+    appraisalCost: 0,
+    auctionCost: 0,
+    totalCost: 0,
+    purchaseMinusSenior: 0,
+    finalPurchasePrice: 0,
+  });
+
   const result = useNPLCalculation(caseInfo, rights, comparables, params);
 
   return (
@@ -43,9 +77,15 @@ export function NPLAnalysisTool() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        {/* 섹터 1: 매입 정보 */}
+        <PurchaseInfoSection data={purchaseInfo} onChange={setPurchaseInfo} />
+
+        {/* 섹터 2: 매입가격 분석 정보 */}
+        <PriceAnalysisSection data={priceAnalysis} purchaseInfo={purchaseInfo} onChange={setPriceAnalysis} />
+
+        {/* 기존 분석 영역 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 입력 영역 */}
           <div className="lg:col-span-2 space-y-6">
             <CaseInfoSection data={caseInfo} onChange={setCaseInfo} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -55,7 +95,6 @@ export function NPLAnalysisTool() {
             <ComparablesSection items={comparables} onChange={setComparables} />
           </div>
 
-          {/* 결과 영역 */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <ResultSection result={result} />

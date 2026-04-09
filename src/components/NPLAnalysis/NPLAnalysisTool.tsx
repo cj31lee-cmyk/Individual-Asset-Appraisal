@@ -118,7 +118,7 @@ export function NPLAnalysisTool() {
         {/* 분석 영역 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <RightsSection items={rights} onChange={handleRightsChange} />
-          <ParamsSection data={params} onChange={handleParamsChange} />
+          <ParamsSection data={params} priceAnalysis={priceAnalysis} onChange={handleParamsChange} />
         </div>
 
         {/* 분석 실행 버튼 */}

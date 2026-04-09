@@ -1,12 +1,13 @@
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import type { AnalysisParams } from "./types";
+import type { AnalysisParams, PriceAnalysisInfo } from "./types";
 import { Settings, Wallet, Users, Scale, Truck, MoreHorizontal } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 
 interface Props {
   data: AnalysisParams;
+  priceAnalysis: PriceAnalysisInfo;
   onChange: (data: AnalysisParams) => void;
 }
 
@@ -14,11 +15,80 @@ function formatNum(n: number) {
   return n.toLocaleString("ko-KR", { maximumFractionDigits: 0 });
 }
 
-export function ParamsSection({ data, onChange }: Props) {
-  const update = (key: keyof AnalysisParams, value: number) =>
-    onChange({ ...data, [key]: value });
+export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
+  const update = (key: keyof AnalysisParams, value: number) => {
+    const next = { ...data, [key]: value };
+    recalc(next, key);
+  };
 
-  // 자동 계산
+  const recalc = (next: AnalysisParams, changedKey?: keyof AnalysisParams) => {
+    const market = next.marketPrice;
+    const months = next.holdingMonths;
+    const loanPurchase = priceAnalysis.loanPurchasePrice;
+
+    // 조달금액 = 채권매입가 (자동)
+    if (changedKey !== "fundingAmount") {
+      next.fundingAmount = loanPurchase;
+    }
+
+    // 인건비 = 월 50만 × 보유기간
+    if (changedKey !== "laborCost") {
+      next.laborCost = Math.round(50 * months);
+    }
+
+    // 관리비·출장비 = 월 15만 × 보유기간
+    if (changedKey !== "managementCost") {
+      next.managementCost = Math.round(15 * months);
+    }
+
+    // 법무사비: 시세 구간별
+    if (changedKey !== "legalFee") {
+      if (market <= 10000) next.legalFee = 80;
+      else if (market <= 30000) next.legalFee = 120;
+      else if (market <= 50000) next.legalFee = 150;
+      else next.legalFee = 200;
+    }
+
+    // 경매비용: 시세 × 0.3% (최소 50)
+    if (changedKey !== "auctionCost") {
+      next.auctionCost = Math.max(Math.round(market * 0.003), 50);
+    }
+
+    // 감정평가비: 시세 구간별
+    if (changedKey !== "appraisalFee") {
+      if (market <= 5000) next.appraisalFee = 30;
+      else if (market <= 10000) next.appraisalFee = 50;
+      else if (market <= 50000) next.appraisalFee = 80;
+      else next.appraisalFee = 120;
+    }
+
+    // 명도비: 고정 300 (실무 평균)
+    // 사용자가 직접 수정 가능하도록 changedKey 체크
+    if (changedKey !== "evictionCost" && data.evictionCost === 0 && next.evictionCost === 0) {
+      next.evictionCost = 300;
+    }
+
+    // 중개수수료 = 시세 × 0.4%
+    if (changedKey !== "brokerageFee") {
+      next.brokerageFee = Math.round(market * 0.004);
+    }
+
+    // 취득세·등록세 = 시세 × 4.6%
+    if (changedKey !== "transferTax") {
+      next.transferTax = Math.round(market * 0.046);
+    }
+
+    onChange(next);
+  };
+
+  // priceAnalysis 변경 시 조달금액 등 재계산
+  useEffect(() => {
+    if (priceAnalysis.loanPurchasePrice > 0 && data.fundingAmount !== priceAnalysis.loanPurchasePrice) {
+      recalc({ ...data }, undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceAnalysis.loanPurchasePrice]);
+
   const fundingCost = useMemo(() => {
     return Math.round((data.fundingAmount * (data.fundingRate / 100) * data.holdingMonths) / 12);
   }, [data.fundingAmount, data.fundingRate, data.holdingMonths]);
@@ -38,7 +108,7 @@ export function ParamsSection({ data, onChange }: Props) {
     );
   }, [fundingCost, data]);
 
-  const numField = (label: string, key: keyof AnalysisParams, placeholder = "0", suffix = "") => (
+  const numField = (label: string, key: keyof AnalysisParams, placeholder = "0") => (
     <div>
       <label className="input-label">{label}</label>
       <Input
@@ -47,6 +117,16 @@ export function ParamsSection({ data, onChange }: Props) {
         value={(data[key] as number) || ""}
         onChange={(e) => update(key, Number(e.target.value))}
       />
+    </div>
+  );
+
+  const autoField = (label: string, value: number, formula: string) => (
+    <div>
+      <label className="input-label">{label}</label>
+      <div className="h-10 px-3 rounded-md border border-input flex items-center text-sm font-semibold tabular-nums bg-muted/50 text-foreground">
+        {formatNum(value)} 만원
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-0.5">{formula}</p>
     </div>
   );
 
@@ -60,15 +140,7 @@ export function ParamsSection({ data, onChange }: Props) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 시세 */}
-        <div>
-          <label className="input-label">시세 (만원)</label>
-          <Input
-            type="number"
-            placeholder="55,000"
-            value={data.marketPrice || ""}
-            onChange={(e) => update("marketPrice", Number(e.target.value))}
-          />
-        </div>
+        {numField("시세 (만원)", "marketPrice", "55,000")}
 
         {/* 조달 비용 */}
         <div>
@@ -77,13 +149,13 @@ export function ParamsSection({ data, onChange }: Props) {
           </p>
           <div className="grid grid-cols-3 gap-2">
             {numField("조달금리 (%)", "fundingRate", "5.5")}
-            {numField("보유기간 (개월)", "holdingMonths", "6")}
-            {numField("조달금액 (만원)", "fundingAmount", "30,000")}
+            {numField("보유기간 (개월)", "holdingMonths", "12")}
+            {autoField("조달금액", data.fundingAmount, "= 채권매입가")}
           </div>
           {fundingCost > 0 && (
             <div className="mt-1.5 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
               → 조달이자: <span className="font-semibold text-foreground">{formatNum(fundingCost)} 만원</span>
-              <span className="ml-1">(조달금액 × 금리 × 보유기간/12)</span>
+              <span className="ml-1">(금액 × 금리 × 기간/12)</span>
             </div>
           )}
         </div>
@@ -96,9 +168,12 @@ export function ParamsSection({ data, onChange }: Props) {
             <Users className="w-3.5 h-3.5" /> 인건비·관리비
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {numField("인건비 (만원)", "laborCost", "200")}
-            {numField("관리비·출장비 (만원)", "managementCost", "50")}
+            {numField("인건비 (만원)", "laborCost", "300")}
+            {numField("관리비·출장비 (만원)", "managementCost", "90")}
           </div>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            기본: 인건비 월50만 × {data.holdingMonths}개월 / 관리비 월15만 × {data.holdingMonths}개월
+          </p>
         </div>
 
         <Separator />
@@ -113,6 +188,9 @@ export function ParamsSection({ data, onChange }: Props) {
             {numField("경매비용 (만원)", "auctionCost", "500")}
             {numField("감정평가비 (만원)", "appraisalFee", "80")}
           </div>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            경매비용 = 시세×0.3% / 감평비 = 구간별 정액
+          </p>
         </div>
 
         <Separator />
@@ -125,8 +203,11 @@ export function ParamsSection({ data, onChange }: Props) {
           <div className="grid grid-cols-3 gap-2">
             {numField("명도비 (만원)", "evictionCost", "300")}
             {numField("중개수수료 (만원)", "brokerageFee", "200")}
-            {numField("취득세·등록세 (만원)", "transferTax", "400")}
+            {numField("취득세·등록세 (만원)", "transferTax", "2,530")}
           </div>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            중개수수료 = 시세×0.4% / 취득세 = 시세×4.6%
+          </p>
         </div>
 
         <Separator />

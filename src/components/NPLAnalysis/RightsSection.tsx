@@ -2,15 +2,19 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import type { RightsItem } from "./types";
-import { Shield, Plus, X } from "lucide-react";
+import { Shield, Plus, X, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface Props {
   items: RightsItem[];
   onChange: (items: RightsItem[]) => void;
 }
 
-// 실제 경매 권리분석에서 등장하는 권리 유형 분류
 const RIGHTS_CATEGORIES = [
   {
     label: "담보권",
@@ -53,7 +57,7 @@ const ALL_PRESETS = RIGHTS_CATEGORIES.flatMap((c) => c.items);
 
 export function RightsSection({ items, onChange }: Props) {
   const addItem = (name?: string) =>
-    onChange([...items, { name: name || "", amount: 0 }]);
+    onChange([...items, { name: name || "", amount: 0, date: "" }]);
 
   const removeItem = (index: number) =>
     onChange(items.filter((_, i) => i !== index));
@@ -98,7 +102,7 @@ export function RightsSection({ items, onChange }: Props) {
         {items.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-border">
             {items.map((item, i) => (
-              <div key={i} className="flex items-center gap-2">
+              <div key={i} className="flex items-center gap-2 flex-wrap">
                 <Select
                   value={ALL_PRESETS.includes(item.name) ? item.name : "__custom__"}
                   onValueChange={(v) => {
@@ -106,7 +110,7 @@ export function RightsSection({ items, onChange }: Props) {
                     updateItem(i, "name", v);
                   }}
                 >
-                  <SelectTrigger className="flex-1 text-xs h-9">
+                  <SelectTrigger className="flex-1 min-w-[140px] text-xs h-9">
                     <SelectValue placeholder="권리 선택" />
                   </SelectTrigger>
                   <SelectContent>
@@ -130,12 +134,38 @@ export function RightsSection({ items, onChange }: Props) {
 
                 {(!ALL_PRESETS.includes(item.name)) && (
                   <Input
-                    className="flex-1 text-xs h-9"
+                    className="flex-1 min-w-[100px] text-xs h-9"
                     placeholder="항목명 직접 입력"
                     value={item.name}
                     onChange={(e) => updateItem(i, "name", e.target.value)}
                   />
                 )}
+
+                {/* 설정일자 (등기접수일) */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[130px] justify-start text-left text-xs h-9 font-normal",
+                        !item.date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-1 h-3.5 w-3.5" />
+                      {item.date ? format(new Date(item.date), "yyyy.MM.dd") : "설정일"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={item.date ? new Date(item.date) : undefined}
+                      onSelect={(d) => updateItem(i, "date", d ? format(d, "yyyy-MM-dd") : "")}
+                      locale={ko}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
 
                 <Input
                   className="w-28 text-xs h-9"

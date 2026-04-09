@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PriceAnalysisInfo, PurchaseInfo } from "./types";
 import { BarChart3 } from "lucide-react";
+import { useEffect } from "react";
 
 interface Props {
   data: PriceAnalysisInfo;
@@ -54,6 +55,24 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
 
     onChange(next);
   };
+
+  // purchaseInfo(선순위110%, 원리금) 변경 시 재계산
+  useEffect(() => {
+    const next = { ...data };
+    next.purchaseMinusSenior = next.estimatedPurchase - purchaseInfo.senior110;
+    const discountRate = next.discountRate > 0 ? next.discountRate : 0;
+    next.loanPurchasePrice = Math.round(next.purchaseMinusSenior * discountRate / 100);
+    next.totalCost = next.mortgageSetupCost + next.appraisalCost + next.auctionCost;
+    next.finalPurchasePrice = next.loanPurchasePrice + next.totalCost;
+    if (
+      next.purchaseMinusSenior !== data.purchaseMinusSenior ||
+      next.loanPurchasePrice !== data.loanPurchasePrice ||
+      next.finalPurchasePrice !== data.finalPurchasePrice
+    ) {
+      onChange(next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [purchaseInfo.senior110, purchaseInfo.principalInterest]);
 
   const numField = (label: string, key: keyof PriceAnalysisInfo, placeholder = "0") => (
     <div>

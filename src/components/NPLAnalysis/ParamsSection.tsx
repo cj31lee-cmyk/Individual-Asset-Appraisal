@@ -27,14 +27,14 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
     // 조달금액 = 최종매입가 (자동)
     next.fundingAmount = priceAnalysis.finalPurchasePrice;
 
-    // 인건비 = 월 10만 × 보유기간
+    // 인건비 기본 0
     if (changedKey !== "laborCost") {
-      next.laborCost = Math.round(10 * months);
+      next.laborCost = 0;
     }
 
-    // 관리비·출장비 = 월 5만 × 보유기간
+    // 관리비·출장비 기본 0
     if (changedKey !== "managementCost") {
-      next.managementCost = Math.round(5 * months);
+      next.managementCost = 0;
     }
 
     onChange(next);
@@ -112,7 +112,7 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
             {numField("관리비·출장비 (만원)", "managementCost", "60")}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1">
-            기본: 인건비 월10만 × {data.holdingMonths}개월 / 관리비 월5만 × {data.holdingMonths}개월
+            기본: 0원 (필요 시 직접 입력)
           </p>
         </div>
 

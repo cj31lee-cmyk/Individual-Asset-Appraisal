@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { AnalysisParams, PriceAnalysisInfo } from "./types";
-import { Settings, Wallet, Users, Scale, Truck, MoreHorizontal } from "lucide-react";
+import { Settings, Wallet, Users, MoreHorizontal } from "lucide-react";
 import { useMemo, useEffect } from "react";
 
 interface Props {
@@ -22,7 +22,6 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
   };
 
   const recalc = (next: AnalysisParams, changedKey?: keyof AnalysisParams) => {
-    const market = next.marketPrice;
     const months = next.holdingMonths;
     const loanPurchase = priceAnalysis.loanPurchasePrice;
 
@@ -31,57 +30,20 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
       next.fundingAmount = loanPurchase;
     }
 
-    // 인건비 = 월 50만 × 보유기간
+    // 인건비 = 월 10만 × 보유기간
     if (changedKey !== "laborCost") {
-      next.laborCost = Math.round(50 * months);
+      next.laborCost = Math.round(10 * months);
     }
 
-    // 관리비·출장비 = 월 15만 × 보유기간
+    // 관리비·출장비 = 월 5만 × 보유기간
     if (changedKey !== "managementCost") {
-      next.managementCost = Math.round(15 * months);
-    }
-
-    // 법무사비: 시세 구간별
-    if (changedKey !== "legalFee") {
-      if (market <= 10000) next.legalFee = 80;
-      else if (market <= 30000) next.legalFee = 120;
-      else if (market <= 50000) next.legalFee = 150;
-      else next.legalFee = 200;
-    }
-
-    // 경매비용: 시세 × 0.3% (최소 50)
-    if (changedKey !== "auctionCost") {
-      next.auctionCost = Math.max(Math.round(market * 0.003), 50);
-    }
-
-    // 감정평가비: 시세 구간별
-    if (changedKey !== "appraisalFee") {
-      if (market <= 5000) next.appraisalFee = 30;
-      else if (market <= 10000) next.appraisalFee = 50;
-      else if (market <= 50000) next.appraisalFee = 80;
-      else next.appraisalFee = 120;
-    }
-
-    // 명도비: 고정 300 (실무 평균)
-    // 사용자가 직접 수정 가능하도록 changedKey 체크
-    if (changedKey !== "evictionCost" && data.evictionCost === 0 && next.evictionCost === 0) {
-      next.evictionCost = 300;
-    }
-
-    // 중개수수료 = 시세 × 0.4%
-    if (changedKey !== "brokerageFee") {
-      next.brokerageFee = Math.round(market * 0.004);
-    }
-
-    // 취득세·등록세 = 시세 × 4.6%
-    if (changedKey !== "transferTax") {
-      next.transferTax = Math.round(market * 0.046);
+      next.managementCost = Math.round(5 * months);
     }
 
     onChange(next);
   };
 
-  // priceAnalysis 변경 시 조달금액 등 재계산
+  // priceAnalysis 변경 시 조달금액 재계산
   useEffect(() => {
     if (priceAnalysis.loanPurchasePrice > 0 && data.fundingAmount !== priceAnalysis.loanPurchasePrice) {
       recalc({ ...data }, undefined);
@@ -94,19 +56,8 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
   }, [data.fundingAmount, data.fundingRate, data.holdingMonths]);
 
   const totalCost = useMemo(() => {
-    return (
-      fundingCost +
-      data.laborCost +
-      data.managementCost +
-      data.legalFee +
-      data.auctionCost +
-      data.appraisalFee +
-      data.evictionCost +
-      data.brokerageFee +
-      data.transferTax +
-      data.miscCost
-    );
-  }, [fundingCost, data]);
+    return fundingCost + data.laborCost + data.managementCost + data.miscCost;
+  }, [fundingCost, data.laborCost, data.managementCost, data.miscCost]);
 
   const numField = (label: string, key: keyof AnalysisParams, placeholder = "0") => (
     <div>
@@ -168,45 +119,11 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
             <Users className="w-3.5 h-3.5" /> 인건비·관리비
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {numField("인건비 (만원)", "laborCost", "300")}
-            {numField("관리비·출장비 (만원)", "managementCost", "90")}
+            {numField("인건비 (만원)", "laborCost", "120")}
+            {numField("관리비·출장비 (만원)", "managementCost", "60")}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1">
-            기본: 인건비 월50만 × {data.holdingMonths}개월 / 관리비 월15만 × {data.holdingMonths}개월
-          </p>
-        </div>
-
-        <Separator />
-
-        {/* 법무·경매 비용 */}
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mb-2">
-            <Scale className="w-3.5 h-3.5" /> 법무·경매 비용
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {numField("법무사비 (만원)", "legalFee", "150")}
-            {numField("경매비용 (만원)", "auctionCost", "500")}
-            {numField("감정평가비 (만원)", "appraisalFee", "80")}
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-1">
-            경매비용 = 시세×0.3% / 감평비 = 구간별 정액
-          </p>
-        </div>
-
-        <Separator />
-
-        {/* 명도·처분 비용 */}
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mb-2">
-            <Truck className="w-3.5 h-3.5" /> 명도·처분 비용
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {numField("명도비 (만원)", "evictionCost", "300")}
-            {numField("중개수수료 (만원)", "brokerageFee", "200")}
-            {numField("취득세·등록세 (만원)", "transferTax", "2,530")}
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-1">
-            중개수수료 = 시세×0.4% / 취득세 = 시세×4.6%
+            기본: 인건비 월10만 × {data.holdingMonths}개월 / 관리비 월5만 × {data.holdingMonths}개월
           </p>
         </div>
 
@@ -229,7 +146,7 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
             </span>
           </div>
           <div className="text-xs text-muted-foreground">
-            조달이자 {formatNum(fundingCost)} + 인건비·관리 {formatNum(data.laborCost + data.managementCost)} + 법무·경매 {formatNum(data.legalFee + data.auctionCost + data.appraisalFee)} + 명도·처분 {formatNum(data.evictionCost + data.brokerageFee + data.transferTax)} + 기타 {formatNum(data.miscCost)}
+            조달이자 {formatNum(fundingCost)} + 인건비 {formatNum(data.laborCost)} + 관리비 {formatNum(data.managementCost)} + 기타 {formatNum(data.miscCost)}
           </div>
         </div>
       </CardContent>

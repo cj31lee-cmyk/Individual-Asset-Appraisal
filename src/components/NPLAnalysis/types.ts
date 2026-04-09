@@ -29,14 +29,6 @@ export interface AnalysisParams {
   // 인건비·관리비
   laborCost: number;            // 인건비 (만원)
   managementCost: number;       // 관리비·출장비 (만원)
-  // 법무·경매 비용
-  legalFee: number;             // 법무사비용 (만원)
-  auctionCost: number;          // 경매비용 (만원)
-  appraisalFee: number;         // 감정평가비 (만원)
-  // 명도·처분 비용
-  evictionCost: number;         // 명도비 (만원)
-  brokerageFee: number;         // 중개수수료 (만원)
-  transferTax: number;          // 취득세·등록세 (만원)
   // 기타
   miscCost: number;             // 기타비용 (만원)
 }

@@ -271,7 +271,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
             <span className="calc-value text-red-600">-{formatNum(analysis.fundingCost)} 만원</span>
           </div>
           <div className="calc-row">
-            <span className="calc-label">운영비용 (인건비·명도·기타)</span>
+            <span className="calc-label">운영비용 (인건비·관리비·기타)</span>
             <span className="calc-value text-red-600">-{formatNum(analysis.totalOperatingCost - analysis.fundingCost)} 만원</span>
           </div>
 

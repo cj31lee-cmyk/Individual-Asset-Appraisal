@@ -25,7 +25,9 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
     const months = next.holdingMonths;
 
     // 조달금액 = 최종매입가 (자동)
-    next.fundingAmount = priceAnalysis.finalPurchasePrice;
+    if (changedKey !== "fundingAmount") {
+      next.fundingAmount = priceAnalysis.finalPurchasePrice;
+    }
 
     // 인건비 기본 0
     if (changedKey !== "laborCost") {
@@ -92,7 +94,7 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
           <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mb-2">
             <Wallet className="w-3.5 h-3.5" /> 조달 비용
           </p>
-          {autoField("조달금액", data.fundingAmount, "= 최종매입가")}
+          {numField("조달금액 (만원)", "fundingAmount", "0")}
           <div className="grid grid-cols-3 gap-2 mt-2">
             {numField("조달금리 (%)", "fundingRate", "5.5")}
             {numField("보유기간 (개월)", "holdingMonths", "12")}

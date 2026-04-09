@@ -17,16 +17,10 @@ export function NPLAnalysisTool() {
   const [params, setParams] = useState<AnalysisParams>({
     marketPrice: 0,
     fundingRate: 5.5,
-    holdingMonths: 6,
+    holdingMonths: 12,
     fundingAmount: 0,
     laborCost: 0,
     managementCost: 0,
-    legalFee: 0,
-    auctionCost: 500,
-    appraisalFee: 0,
-    evictionCost: 300,
-    brokerageFee: 0,
-    transferTax: 0,
     miscCost: 0,
   });
 

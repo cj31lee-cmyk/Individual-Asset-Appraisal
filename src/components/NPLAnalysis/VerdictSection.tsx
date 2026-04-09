@@ -28,17 +28,11 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
       (params.fundingAmount * (params.fundingRate / 100) * params.holdingMonths) / 12
     );
 
-    // 총 운영비용
+    // 총 운영비용 (조달이자 + 인건비 + 관리비 + 기타)
     const totalOperatingCost =
       fundingCost +
       params.laborCost +
       params.managementCost +
-      params.legalFee +
-      params.auctionCost +
-      params.appraisalFee +
-      params.evictionCost +
-      params.brokerageFee +
-      params.transferTax +
       params.miscCost;
 
     // 분석비용 (근저당설정, 감평, 경매)
@@ -277,7 +271,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
             <span className="calc-value text-red-600">-{formatNum(analysis.fundingCost)} 만원</span>
           </div>
           <div className="calc-row">
-            <span className="calc-label">운영비용 (인건비·명도·기타)</span>
+            <span className="calc-label">운영비용 (인건비·관리비·기타)</span>
             <span className="calc-value text-red-600">-{formatNum(analysis.totalOperatingCost - analysis.fundingCost)} 만원</span>
           </div>
 

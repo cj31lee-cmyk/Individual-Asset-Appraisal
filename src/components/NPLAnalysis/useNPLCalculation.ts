@@ -39,12 +39,6 @@ export function useNPLCalculation(
       fundingCost +
       params.laborCost +
       params.managementCost +
-      params.legalFee +
-      params.auctionCost +
-      params.appraisalFee +
-      params.evictionCost +
-      params.brokerageFee +
-      params.transferTax +
       params.miscCost;
 
     // 채권 회수가 = 예상 낙찰가 - 인수금액 - 총비용

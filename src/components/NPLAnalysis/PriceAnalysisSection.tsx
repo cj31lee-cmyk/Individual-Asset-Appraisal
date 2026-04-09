@@ -17,10 +17,36 @@ function formatNum(n: number) {
 export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
   const update = (key: keyof PriceAnalysisInfo, value: number) => {
     const next = { ...data, [key]: value };
-    // 자동 계산
+
+    // 매입예상가 자동계산: KB시세 × 낙찰가율(%)
+    if (key === "kbPrice" || key === "bidRate") {
+      const kb = key === "kbPrice" ? value : next.kbPrice;
+      const rate = key === "bidRate" ? value : next.bidRate;
+      if (kb > 0 && rate > 0) {
+        next.estimatedPurchase = Math.round(kb * rate / 100);
+      }
+    }
+
+    // 근저당설정비용 = 매입예상가 × 0.4%
+    next.mortgageSetupCost = Math.round(next.estimatedPurchase * 0.004);
+
+    // 감평비용: 매입예상가 기준 구간별
+    if (next.estimatedPurchase <= 5000) next.appraisalCost = 30;
+    else if (next.estimatedPurchase <= 10000) next.appraisalCost = 50;
+    else if (next.estimatedPurchase <= 50000) next.appraisalCost = 80;
+    else next.appraisalCost = 120;
+
+    // 경매비용(예납금): 감정가 기준 약 0.3%  (최소 50만원)
+    const auctionBase = Math.round(next.estimatedPurchase * 0.003);
+    next.auctionCost = Math.max(auctionBase, 50);
+
+    // 비용합계
     const totalCost = next.mortgageSetupCost + next.appraisalCost + next.auctionCost;
+    // 매입예상가 - 선순위110%
     const purchaseMinusSenior = next.estimatedPurchase - purchaseInfo.senior110;
+    // 최종매입가
     const finalPurchasePrice = purchaseMinusSenior - totalCost;
+
     onChange({
       ...next,
       totalCost,
@@ -70,10 +96,10 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
           {numField("낙찰가율 (%)", "bidRate")}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {numField("매입 예상가 (만원)", "estimatedPurchase")}
-          {numField("근저당설정비용 (만원)", "mortgageSetupCost")}
-          {numField("감평비용 (만원)", "appraisalCost")}
-          {numField("경매비용 (만원)", "auctionCost")}
+          {readonlyField("매입 예상가", data.estimatedPurchase)}
+          {readonlyField("근저당설정비용 (0.4%)", data.mortgageSetupCost)}
+          {readonlyField("감평비용", data.appraisalCost)}
+          {readonlyField("경매비용 (0.3%)", data.auctionCost)}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {readonlyField("비용합계", data.totalCost)}

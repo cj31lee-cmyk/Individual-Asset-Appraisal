@@ -23,12 +23,9 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
 
   const recalc = (next: AnalysisParams, changedKey?: keyof AnalysisParams) => {
     const months = next.holdingMonths;
-    const loanPurchase = priceAnalysis.loanPurchasePrice;
 
-    // 조달금액 = 채권매입가 (자동)
-    if (changedKey !== "fundingAmount") {
-      next.fundingAmount = loanPurchase;
-    }
+    // 조달금액 = 최종매입가 (자동)
+    next.fundingAmount = priceAnalysis.finalPurchasePrice;
 
     // 인건비 = 월 10만 × 보유기간
     if (changedKey !== "laborCost") {
@@ -45,11 +42,11 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
 
   // priceAnalysis 변경 시 조달금액 재계산
   useEffect(() => {
-    if (priceAnalysis.loanPurchasePrice > 0 && data.fundingAmount !== priceAnalysis.loanPurchasePrice) {
+    if (priceAnalysis.finalPurchasePrice > 0 && data.fundingAmount !== priceAnalysis.finalPurchasePrice) {
       recalc({ ...data }, undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [priceAnalysis.loanPurchasePrice]);
+  }, [priceAnalysis.finalPurchasePrice]);
 
   const fundingCost = useMemo(() => {
     return Math.round((data.fundingAmount * (data.fundingRate / 100) * data.holdingMonths) / 12);
@@ -90,25 +87,17 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* 시세 */}
-        {numField("시세 (만원)", "marketPrice", "55,000")}
-
         {/* 조달 비용 */}
         <div>
           <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mb-2">
             <Wallet className="w-3.5 h-3.5" /> 조달 비용
           </p>
-          <div className="grid grid-cols-3 gap-2">
+          {autoField("조달금액", data.fundingAmount, "= 최종매입가")}
+          <div className="grid grid-cols-3 gap-2 mt-2">
             {numField("조달금리 (%)", "fundingRate", "5.5")}
             {numField("보유기간 (개월)", "holdingMonths", "12")}
-            {autoField("조달금액", data.fundingAmount, "= 채권매입가")}
+            {autoField("조달이자", fundingCost, "금액 × 금리 × 기간/12")}
           </div>
-          {fundingCost > 0 && (
-            <div className="mt-1.5 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
-              → 조달이자: <span className="font-semibold text-foreground">{formatNum(fundingCost)} 만원</span>
-              <span className="ml-1">(금액 × 금리 × 기간/12)</span>
-            </div>
-          )}
         </div>
 
         <Separator />

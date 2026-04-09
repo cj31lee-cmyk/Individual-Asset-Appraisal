@@ -76,11 +76,13 @@ export interface PriceAnalysisInfo {
   actualTransPrice: number;       // 실거래가격
   kbPrice: number;                // KB시세
   bidRate: number;                // 낙찰가율
-  estimatedPurchase: number;      // 매입 예상가
+  estimatedPurchase: number;      // 매입 예상가 (KB시세 × 낙찰가율)
+  discountRate: number;           // 할인율 (%)
   mortgageSetupCost: number;      // 근저당설정비용
   appraisalCost: number;          // 감평비용
   auctionCost: number;            // 경매비용
   totalCost: number;              // 비용합계
-  purchaseMinusSenior: number;    // 매입예상가-선순위110%
-  finalPurchasePrice: number;     // 최종매입가
+  purchaseMinusSenior: number;    // 회수예상가 (매입예상가 - 선순위110%)
+  loanPurchasePrice: number;      // 채권매입가 (원리금 × 할인율)
+  finalPurchasePrice: number;     // 최종매입가 (채권매입가 + 비용)
 }

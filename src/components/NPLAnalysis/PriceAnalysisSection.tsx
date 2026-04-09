@@ -2,7 +2,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PriceAnalysisInfo, PurchaseInfo } from "./types";
 import { BarChart3 } from "lucide-react";
-import { useMemo } from "react";
 
 interface Props {
   data: PriceAnalysisInfo;
@@ -18,7 +17,7 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
   const update = (key: keyof PriceAnalysisInfo, value: number) => {
     const next = { ...data, [key]: value };
 
-    // 매입예상가 자동계산: KB시세 × 낙찰가율(%)
+    // 매입예상가 = KB시세 × 낙찰가율(%)
     if (key === "kbPrice" || key === "bidRate") {
       const kb = key === "kbPrice" ? value : next.kbPrice;
       const rate = key === "bidRate" ? value : next.bidRate;
@@ -36,23 +35,25 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
     else if (next.estimatedPurchase <= 50000) next.appraisalCost = 80;
     else next.appraisalCost = 120;
 
-    // 경매비용(예납금): 감정가 기준 약 0.3%  (최소 50만원)
+    // 경매비용(예납금): 약 0.3% (최소 50만원)
     const auctionBase = Math.round(next.estimatedPurchase * 0.003);
     next.auctionCost = Math.max(auctionBase, 50);
 
     // 비용합계
-    const totalCost = next.mortgageSetupCost + next.appraisalCost + next.auctionCost;
-    // 매입예상가 - 선순위110%
-    const purchaseMinusSenior = next.estimatedPurchase - purchaseInfo.senior110;
-    // 최종매입가
-    const finalPurchasePrice = purchaseMinusSenior - totalCost;
+    next.totalCost = next.mortgageSetupCost + next.appraisalCost + next.auctionCost;
 
-    onChange({
-      ...next,
-      totalCost,
-      purchaseMinusSenior,
-      finalPurchasePrice,
-    });
+    // 회수예상가 = 매입예상가 - 선순위110%
+    next.purchaseMinusSenior = next.estimatedPurchase - purchaseInfo.senior110;
+
+    // 채권매입가 = 원리금 × 할인율
+    const principalInterest = purchaseInfo.principalInterest;
+    const discountRate = next.discountRate > 0 ? next.discountRate : 0;
+    next.loanPurchasePrice = Math.round(principalInterest * discountRate / 100);
+
+    // 최종매입가 = 채권매입가 + 비용합계
+    next.finalPurchasePrice = next.loanPurchasePrice + next.totalCost;
+
+    onChange(next);
   };
 
   const numField = (label: string, key: keyof PriceAnalysisInfo, placeholder = "0") => (
@@ -71,8 +72,8 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
     <div>
       <label className="input-label">{label}</label>
       <div className={`h-10 px-3 rounded-md border border-input flex items-center text-sm font-semibold tabular-nums ${
-        highlight 
-          ? value >= 0 ? "bg-success/10 text-success border-success/30" : "bg-destructive/10 text-destructive border-destructive/30"
+        highlight
+          ? value >= 0 ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : "bg-red-500/10 text-red-600 border-red-500/30"
           : "bg-muted/50 text-foreground"
       }`}>
         {formatNum(value)} 만원
@@ -96,15 +97,19 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
           {numField("낙찰가율 (%)", "bidRate")}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {readonlyField("매입 예상가", data.estimatedPurchase)}
+          {readonlyField("매입 예상가 (회수가)", data.estimatedPurchase)}
+          {numField("할인율 (%)", "discountRate")}
+          {readonlyField("채권매입가 (원리금×할인율)", data.loanPurchasePrice, true)}
           {readonlyField("근저당설정비용 (0.4%)", data.mortgageSetupCost)}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {readonlyField("감평비용", data.appraisalCost)}
           {readonlyField("경매비용 (0.3%)", data.auctionCost)}
+          {readonlyField("비용합계", data.totalCost)}
+          {readonlyField("회수예상가 (매입예상가-선순위)", data.purchaseMinusSenior, true)}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {readonlyField("비용합계", data.totalCost)}
-          {readonlyField("매입예상가 - 선순위110%", data.purchaseMinusSenior, true)}
-          {readonlyField("최종매입가", data.finalPurchasePrice, true)}
+          {readonlyField("최종매입가 (채권매입가+비용)", data.finalPurchasePrice, true)}
         </div>
       </CardContent>
     </Card>

@@ -50,8 +50,8 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
     const discountRate = next.discountRate > 0 ? next.discountRate : 0;
     next.loanPurchasePrice = Math.round(next.purchaseMinusSenior * discountRate / 100);
 
-    // 최종매입가 = 채권매입가 + 비용합계
-    next.finalPurchasePrice = next.loanPurchasePrice + next.totalCost;
+    // 최종매입가 = 회수예상가 × 할인율
+    next.finalPurchasePrice = next.loanPurchasePrice;
 
     onChange(next);
   };
@@ -63,7 +63,7 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
     const discountRate = next.discountRate > 0 ? next.discountRate : 0;
     next.loanPurchasePrice = Math.round(next.purchaseMinusSenior * discountRate / 100);
     next.totalCost = next.mortgageSetupCost + next.appraisalCost + next.auctionCost;
-    next.finalPurchasePrice = next.loanPurchasePrice + next.totalCost;
+    next.finalPurchasePrice = next.loanPurchasePrice;
     if (
       next.purchaseMinusSenior !== data.purchaseMinusSenior ||
       next.loanPurchasePrice !== data.loanPurchasePrice ||
@@ -127,7 +127,7 @@ export function PriceAnalysisSection({ data, purchaseInfo, onChange }: Props) {
           {readonlyField("회수예상가 (매입예상가-선순위)", data.purchaseMinusSenior, true)}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {readonlyField("최종매입가 (채권매입가+비용)", data.finalPurchasePrice, true)}
+          {readonlyField("최종매입가 (회수예상가×할인율)", data.finalPurchasePrice, true)}
         </div>
       </CardContent>
     </Card>

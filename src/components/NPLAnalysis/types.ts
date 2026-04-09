@@ -10,6 +10,7 @@ export interface CaseInfo {
 export interface RightsItem {
   name: string;
   amount: number;
+  date: string;           // 설정일자 (등기접수일)
 }
 
 export interface ComparableCase {

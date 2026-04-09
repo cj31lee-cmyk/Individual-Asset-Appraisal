@@ -31,11 +31,27 @@ export function useNPLCalculation(
     // 예상 낙찰가 = 감정가 × 보정 낙찰가율
     const expectedWinningBid = caseInfo.appraisalPrice * (adjustedBidRate / 100);
 
-    // 채권 회수가
-    const recoveryPrice = expectedWinningBid - totalAssumption - params.auctionCost - params.evictionCost;
+    // 총 비용 계산
+    const fundingCost = Math.round(
+      (params.fundingAmount * (params.fundingRate / 100) * params.holdingMonths) / 12
+    );
+    const totalCost =
+      fundingCost +
+      params.laborCost +
+      params.managementCost +
+      params.legalFee +
+      params.auctionCost +
+      params.appraisalFee +
+      params.evictionCost +
+      params.brokerageFee +
+      params.transferTax +
+      params.miscCost;
 
-    // 채권 매입 적정가
-    const fairPurchasePrice = recoveryPrice * (1 - params.targetReturnRate / 100);
+    // 채권 회수가 = 예상 낙찰가 - 인수금액 - 총비용
+    const recoveryPrice = expectedWinningBid - totalAssumption - totalCost;
+
+    // 수익률 = 회수가 / 매입가 (매입가를 알 수 없으면 회수가 자체를 적정가로)
+    const fairPurchasePrice = recoveryPrice;
 
     return {
       medianBidRate,

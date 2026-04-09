@@ -1,27 +1,15 @@
 import { useState } from "react";
-import type { CaseInfo, RightsItem, ComparableCase, AnalysisParams, PurchaseInfo, PriceAnalysisInfo } from "./types";
-import { CaseInfoSection } from "./CaseInfoSection";
+import type { AnalysisParams, PurchaseInfo, PriceAnalysisInfo } from "./types";
 import { RightsSection } from "./RightsSection";
-import { ComparablesSection } from "./ComparablesSection";
 import { ParamsSection } from "./ParamsSection";
-import { ResultSection } from "./ResultSection";
 import { PurchaseInfoSection } from "./PurchaseInfoSection";
 import { PriceAnalysisSection } from "./PriceAnalysisSection";
-import { useNPLCalculation } from "./useNPLCalculation";
+import { VerdictSection } from "./VerdictSection";
+import type { RightsItem } from "./types";
 import { Landmark } from "lucide-react";
 
 export function NPLAnalysisTool() {
-  const [caseInfo, setCaseInfo] = useState<CaseInfo>({
-    caseNumber: "",
-    address: "",
-    complex: "",
-    appraisalPrice: 0,
-    round: 1,
-    saleDate: "",
-  });
-
   const [rights, setRights] = useState<RightsItem[]>([]);
-  const [comparables, setComparables] = useState<ComparableCase[]>([]);
   const [params, setParams] = useState<AnalysisParams>({
     marketPrice: 0,
     fundingRate: 5.5,
@@ -70,8 +58,6 @@ export function NPLAnalysisTool() {
     finalPurchasePrice: 0,
   });
 
-  const result = useNPLCalculation(caseInfo, rights, comparables, params);
-
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card sticky top-0 z-10">
@@ -93,20 +79,23 @@ export function NPLAnalysisTool() {
         {/* 섹터 2: 매입가격 분석 정보 */}
         <PriceAnalysisSection data={priceAnalysis} purchaseInfo={purchaseInfo} onChange={setPriceAnalysis} />
 
-        {/* 기존 분석 영역 */}
+        {/* 분석 영역 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <CaseInfoSection data={caseInfo} onChange={setCaseInfo} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <RightsSection items={rights} onChange={setRights} />
               <ParamsSection data={params} onChange={setParams} />
             </div>
-            <ComparablesSection items={comparables} onChange={setComparables} />
           </div>
 
+          {/* 최종 판정 */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
-              <ResultSection result={result} />
+              <VerdictSection
+                purchaseInfo={purchaseInfo}
+                priceAnalysis={priceAnalysis}
+                params={params}
+              />
             </div>
           </div>
         </div>

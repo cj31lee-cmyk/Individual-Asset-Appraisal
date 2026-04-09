@@ -19,73 +19,72 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
     const principalInterest = purchaseInfo.principalInterest;
     const discountRate = priceAnalysis.discountRate;
     const loanPurchasePrice = priceAnalysis.loanPurchasePrice; // 채권매입가 (원리금 × 할인율)
+    const analysisCost = priceAnalysis.totalCost; // 분석비용 (근저당+감평+경매)
+    const finalPurchasePrice = priceAnalysis.finalPurchasePrice; // 최종매입가 (채권매입가+분석비용)
 
-    // 회수예상가 = 매입예상가(KB시세×낙찰가율) - 선순위110%
-    const recoveryEstimate = priceAnalysis.purchaseMinusSenior;
-
-    // 조달이자 (보유기간 동안)
+    // 조달이자
     const fundingCost = Math.round(
       (params.fundingAmount * (params.fundingRate / 100) * params.holdingMonths) / 12
     );
 
-    // 총 운영비용 (조달이자 + 인건비 + 관리비 + 기타)
+    // 운영비용 (조달이자 + 인건비 + 관리비 + 기타)
     const totalOperatingCost =
       fundingCost +
       params.laborCost +
       params.managementCost +
       params.miscCost;
 
-    // 분석비용 (근저당설정, 감평, 경매)
-    const analysisCost = priceAnalysis.totalCost;
+    // ★ 총 매입비용 = 최종매입가 + 운영비용
+    const totalCostAll = finalPurchasePrice + totalOperatingCost;
 
-    // 총투자금 = 채권매입가 + 분석비용 + 운영비용
-    const totalInvestment = loanPurchasePrice + analysisCost + totalOperatingCost;
+    // ★ 배당금 = 경매 회수예상가 (매입예상가 - 선순위110%)
+    const auctionDividend = priceAnalysis.purchaseMinusSenior;
 
-    // 예상수익 = 회수예상가 - 총투자금
-    const expectedProfit = recoveryEstimate - totalInvestment;
+    // ★ 최종수익 = 배당금 - 총 매입비용
+    const finalProfit = auctionDividend - totalCostAll;
 
-    // 수익률 = 예상수익 / 채권매입가 × 100
-    const roi = loanPurchasePrice > 0 ? (expectedProfit / loanPurchasePrice) * 100 : 0;
+    // ★ 수익률 = 최종수익 / 총 매입비용
+    const roi = totalCostAll > 0 ? (finalProfit / totalCostAll) * 100 : 0;
 
     // 판정
     let verdict: "buy" | "caution" | "reject";
     let verdictText: string;
     let verdictDescription: string;
 
-    if (loanPurchasePrice <= 0) {
+    if (totalCostAll <= 0) {
       verdict = "reject";
       verdictText = "매입 불가";
-      verdictDescription = "채권매입가가 산출되지 않았습니다. 원리금과 할인율을 확인해주세요.";
+      verdictDescription = "매입비용이 산출되지 않았습니다. 입력값을 확인해주세요.";
     } else if (roi >= 15) {
       verdict = "buy";
       verdictText = "매입 추천";
-      verdictDescription = `예상 수익률 ${roi.toFixed(1)}%로 목표 수익률을 충족합니다. 본 채권은 매입을 적극 검토할 만합니다.`;
+      verdictDescription = `${params.holdingMonths}개월 보유 후 경매 시 예상 수익률 ${roi.toFixed(1)}%. 본 채권은 매입을 적극 검토할 만합니다.`;
     } else if (roi >= 5) {
       verdict = "caution";
       verdictText = "조건부 매입";
-      verdictDescription = `예상 수익률 ${roi.toFixed(1)}%로 수익성은 있으나, 리스크 대비 마진이 낮습니다. 할인율 조정 또는 비용 절감이 필요합니다.`;
+      verdictDescription = `${params.holdingMonths}개월 보유 후 예상 수익률 ${roi.toFixed(1)}%. 수익성은 있으나 할인율 조정 또는 비용 절감이 필요합니다.`;
     } else {
       verdict = "reject";
       verdictText = "매입 부적격";
-      verdictDescription = `예상 수익률 ${roi.toFixed(1)}%로 투자 대비 수익성이 부족합니다. 매입을 재고하시기 바랍니다.`;
+      verdictDescription = `${params.holdingMonths}개월 보유 후 예상 수익률 ${roi.toFixed(1)}%. 투자 대비 수익성이 부족합니다.`;
     }
 
     return {
       principalInterest,
       discountRate,
       loanPurchasePrice,
-      recoveryEstimate,
+      analysisCost,
+      finalPurchasePrice,
       fundingCost,
       totalOperatingCost,
-      analysisCost,
-      totalInvestment,
-      expectedProfit,
+      totalCostAll,
+      auctionDividend,
+      finalProfit,
       roi,
       verdict,
       verdictText,
       verdictDescription,
       kbPrice: priceAnalysis.kbPrice,
-      actualTransPrice: priceAnalysis.actualTransPrice,
       bidRate: priceAnalysis.bidRate,
       senior110: purchaseInfo.senior110,
       estimatedPurchase: priceAnalysis.estimatedPurchase,

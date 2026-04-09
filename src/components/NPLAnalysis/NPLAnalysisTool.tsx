@@ -54,11 +54,13 @@ export function NPLAnalysisTool() {
     kbPrice: 0,
     bidRate: 0,
     estimatedPurchase: 0,
+    discountRate: 0,
     mortgageSetupCost: 0,
     appraisalCost: 0,
     auctionCost: 0,
     totalCost: 0,
     purchaseMinusSenior: 0,
+    loanPurchasePrice: 0,
     finalPurchasePrice: 0,
   });
 

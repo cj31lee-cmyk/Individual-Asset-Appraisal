@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { PurchaseInfo, PriceAnalysisInfo, AnalysisParams } from "./types";
-import { CheckCircle2, XCircle, AlertTriangle, Gavel, ArrowDown, TrendingUp, Minus } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Gavel, ArrowDown, TrendingUp } from "lucide-react";
 import { useMemo } from "react";
 
 interface Props {
@@ -16,16 +16,19 @@ function formatNum(n: number) {
 
 export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
   const analysis = useMemo(() => {
-    const finalPrice = priceAnalysis.finalPurchasePrice;
-    const loanBalance = purchaseInfo.loanBalance;
     const principalInterest = purchaseInfo.principalInterest;
+    const discountRate = priceAnalysis.discountRate;
+    const loanPurchasePrice = priceAnalysis.loanPurchasePrice; // 채권매입가 (원리금 × 할인율)
 
-    // 조달이자
+    // 회수예상가 = 매입예상가(KB시세×낙찰가율) - 선순위110%
+    const recoveryEstimate = priceAnalysis.purchaseMinusSenior;
+
+    // 조달이자 (보유기간 동안)
     const fundingCost = Math.round(
       (params.fundingAmount * (params.fundingRate / 100) * params.holdingMonths) / 12
     );
 
-    // 총 운영비용 (비용·수익 분석 섹션)
+    // 총 운영비용
     const totalOperatingCost =
       fundingCost +
       params.laborCost +
@@ -38,27 +41,27 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
       params.transferTax +
       params.miscCost;
 
-    // 매입가격 분석 비용
+    // 분석비용 (근저당설정, 감평, 경매)
     const analysisCost = priceAnalysis.totalCost;
 
-    // 예상 수익 = 최종매입가 - 원리금 - 총운영비용
-    const expectedProfit = finalPrice - totalOperatingCost;
+    // 총투자금 = 채권매입가 + 분석비용 + 운영비용
+    const totalInvestment = loanPurchasePrice + analysisCost + totalOperatingCost;
 
-    // 수익률 = 예상수익 / 최종매입가
-    const roi = finalPrice > 0 ? (expectedProfit / finalPrice) * 100 : 0;
+    // 예상수익 = 회수예상가 - 총투자금
+    const expectedProfit = recoveryEstimate - totalInvestment;
 
-    // 매입가 대비 대출잔액 비율
-    const ltvRatio = finalPrice > 0 ? (loanBalance / finalPrice) * 100 : 0;
+    // 수익률 = 예상수익 / 채권매입가 × 100
+    const roi = loanPurchasePrice > 0 ? (expectedProfit / loanPurchasePrice) * 100 : 0;
 
     // 판정
     let verdict: "buy" | "caution" | "reject";
     let verdictText: string;
     let verdictDescription: string;
 
-    if (finalPrice <= 0) {
+    if (loanPurchasePrice <= 0) {
       verdict = "reject";
       verdictText = "매입 불가";
-      verdictDescription = "최종매입가가 산출되지 않았습니다. 입력값을 확인해주세요.";
+      verdictDescription = "채권매입가가 산출되지 않았습니다. 원리금과 할인율을 확인해주세요.";
     } else if (roi >= 15) {
       verdict = "buy";
       verdictText = "매입 추천";
@@ -66,7 +69,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
     } else if (roi >= 5) {
       verdict = "caution";
       verdictText = "조건부 매입";
-      verdictDescription = `예상 수익률 ${roi.toFixed(1)}%로 수익성은 있으나, 리스크 대비 마진이 낮습니다. 추가 협상 또는 비용 절감이 필요합니다.`;
+      verdictDescription = `예상 수익률 ${roi.toFixed(1)}%로 수익성은 있으나, 리스크 대비 마진이 낮습니다. 할인율 조정 또는 비용 절감이 필요합니다.`;
     } else {
       verdict = "reject";
       verdictText = "매입 부적격";
@@ -74,15 +77,16 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
     }
 
     return {
-      finalPrice,
-      loanBalance,
       principalInterest,
+      discountRate,
+      loanPurchasePrice,
+      recoveryEstimate,
       fundingCost,
       totalOperatingCost,
       analysisCost,
+      totalInvestment,
       expectedProfit,
       roi,
-      ltvRatio,
       verdict,
       verdictText,
       verdictDescription,
@@ -91,10 +95,11 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
       bidRate: priceAnalysis.bidRate,
       senior110: purchaseInfo.senior110,
       estimatedPurchase: priceAnalysis.estimatedPurchase,
+      holdingMonths: params.holdingMonths,
     };
   }, [purchaseInfo, priceAnalysis, params]);
 
-  const hasData = analysis.finalPrice !== 0 || analysis.estimatedPurchase !== 0;
+  const hasData = analysis.loanPurchasePrice > 0 || analysis.estimatedPurchase > 0;
 
   if (!hasData) {
     return (
@@ -169,17 +174,26 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
           <Separator />
 
           {/* 핵심 수치 요약 */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="bg-card/80 rounded-lg p-3 text-center">
-              <p className="text-xs text-muted-foreground mb-1">최종매입가</p>
-              <p className="text-xl font-black tabular-nums text-foreground">
-                {formatNum(analysis.finalPrice)}
+              <p className="text-xs text-muted-foreground mb-1">채권매입가</p>
+              <p className="text-lg font-black tabular-nums text-foreground">
+                {formatNum(analysis.loanPurchasePrice)}
+                <span className="text-xs font-normal ml-1">만원</span>
+              </p>
+            </div>
+            <div className="bg-card/80 rounded-lg p-3 text-center">
+              <p className="text-xs text-muted-foreground mb-1">예상 수익</p>
+              <p className={`text-lg font-black tabular-nums ${
+                analysis.expectedProfit >= 0 ? "text-emerald-600" : "text-red-600"
+              }`}>
+                {formatNum(analysis.expectedProfit)}
                 <span className="text-xs font-normal ml-1">만원</span>
               </p>
             </div>
             <div className="bg-card/80 rounded-lg p-3 text-center">
               <p className="text-xs text-muted-foreground mb-1">예상 수익률</p>
-              <p className={`text-xl font-black tabular-nums ${
+              <p className={`text-lg font-black tabular-nums ${
                 analysis.roi >= 15 ? "text-emerald-600" : analysis.roi >= 5 ? "text-amber-600" : "text-red-600"
               }`}>
                 {analysis.roi.toFixed(1)}
@@ -190,72 +204,81 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
         </CardContent>
       </Card>
 
-      {/* 핵심 지표 요약 */}
+      {/* 투자 흐름 요약 */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="section-title !mb-0">
             <TrendingUp className="w-5 h-5" />
-            핵심 지표 요약
+            투자 흐름 분석 ({analysis.holdingMonths}개월 보유 기준)
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-0">
           <div className="calc-row">
+            <span className="calc-label">원리금 (대출잔액+이자)</span>
+            <span className="calc-value">{formatNum(analysis.principalInterest)} 만원</span>
+          </div>
+          <div className="calc-row">
+            <span className="calc-label">할인율</span>
+            <span className="calc-value">{analysis.discountRate}%</span>
+          </div>
+          <div className="calc-row border-t border-dashed border-border/80">
+            <span className="calc-label font-semibold">① 채권매입가 (원리금 × 할인율)</span>
+            <span className="calc-value font-bold">{formatNum(analysis.loanPurchasePrice)} 만원</span>
+          </div>
+
+          <div className="calc-row mt-2">
             <span className="calc-label">KB시세</span>
             <span className="calc-value">{formatNum(analysis.kbPrice)} 만원</span>
           </div>
           <div className="calc-row">
-            <span className="calc-label">실거래가격</span>
-            <span className="calc-value">{formatNum(analysis.actualTransPrice)} 만원</span>
-          </div>
-          <div className="calc-row">
             <span className="calc-label">낙찰가율</span>
-            <span className="calc-value">{analysis.bidRate.toFixed(1)}%</span>
+            <span className="calc-value">{analysis.bidRate}%</span>
           </div>
           <div className="calc-row">
-            <span className="calc-label">매입 예상가</span>
+            <span className="calc-label">매입예상가 (KB시세×낙찰가율)</span>
             <span className="calc-value">{formatNum(analysis.estimatedPurchase)} 만원</span>
           </div>
-
-          <div className="calc-row border-t border-dashed border-border/80">
-            <span className="calc-label">선순위 110%</span>
-            <span className="calc-value text-destructive">-{formatNum(analysis.senior110)} 만원</span>
-          </div>
           <div className="calc-row">
-            <span className="calc-label">분석 비용 합계</span>
-            <span className="calc-value text-destructive">-{formatNum(analysis.analysisCost)} 만원</span>
+            <span className="calc-label">선순위 110%</span>
+            <span className="calc-value text-red-600">-{formatNum(analysis.senior110)} 만원</span>
           </div>
-
-          <div className="calc-row border-t-2 border-border bg-muted/30 rounded -mx-4 px-4">
-            <span className="calc-label font-semibold text-foreground">최종매입가</span>
-            <span className={`text-base font-bold tabular-nums ${
-              analysis.finalPrice >= 0 ? "text-emerald-600" : "text-red-600"
-            }`}>
-              {formatNum(analysis.finalPrice)} 만원
+          <div className="calc-row border-t border-dashed border-border/80">
+            <span className="calc-label font-semibold">② 회수예상가 (경매 배당)</span>
+            <span className={`calc-value font-bold ${analysis.recoveryEstimate >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+              {formatNum(analysis.recoveryEstimate)} 만원
             </span>
           </div>
         </CardContent>
       </Card>
 
-      {/* 비용 vs 수익 */}
+      {/* 비용 & 수익 */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="section-title !mb-0">
             <ArrowDown className="w-5 h-5" />
-            수익성 분석
+            비용 · 수익 계산
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-0">
           <div className="calc-row">
-            <span className="calc-label">대출잔액</span>
-            <span className="calc-value">{formatNum(analysis.loanBalance)} 만원</span>
+            <span className="calc-label">② 회수예상가</span>
+            <span className="calc-value text-emerald-600">{formatNum(analysis.recoveryEstimate)} 만원</span>
           </div>
           <div className="calc-row">
-            <span className="calc-label">조달이자</span>
-            <span className="calc-value text-destructive">-{formatNum(analysis.fundingCost)} 만원</span>
+            <span className="calc-label">① 채권매입가</span>
+            <span className="calc-value text-red-600">-{formatNum(analysis.loanPurchasePrice)} 만원</span>
           </div>
           <div className="calc-row">
-            <span className="calc-label">총 운영비용</span>
-            <span className="calc-value text-destructive">-{formatNum(analysis.totalOperatingCost)} 만원</span>
+            <span className="calc-label">분석비용 (근저당+감평+경매)</span>
+            <span className="calc-value text-red-600">-{formatNum(analysis.analysisCost)} 만원</span>
+          </div>
+          <div className="calc-row">
+            <span className="calc-label">조달이자 ({params.holdingMonths}개월)</span>
+            <span className="calc-value text-red-600">-{formatNum(analysis.fundingCost)} 만원</span>
+          </div>
+          <div className="calc-row">
+            <span className="calc-label">운영비용 (인건비·명도·기타)</span>
+            <span className="calc-value text-red-600">-{formatNum(analysis.totalOperatingCost - analysis.fundingCost)} 만원</span>
           </div>
 
           <div className="calc-row border-t-2 border-border bg-muted/30 rounded -mx-4 px-4">
@@ -270,7 +293,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
           {/* 수익률 바 */}
           <div className="pt-3">
             <div className="flex justify-between items-center mb-1.5">
-              <span className="text-xs text-muted-foreground">수익률</span>
+              <span className="text-xs text-muted-foreground">투자수익률 (ROI)</span>
               <span className={`text-sm font-bold tabular-nums ${
                 analysis.roi >= 15 ? "text-emerald-600" : analysis.roi >= 5 ? "text-amber-600" : "text-red-600"
               }`}>

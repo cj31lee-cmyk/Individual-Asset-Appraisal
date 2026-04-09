@@ -24,9 +24,18 @@ export function NPLAnalysisTool() {
   const [comparables, setComparables] = useState<ComparableCase[]>([]);
   const [params, setParams] = useState<AnalysisParams>({
     marketPrice: 0,
-    targetReturnRate: 20,
+    fundingRate: 5.5,
+    holdingMonths: 6,
+    fundingAmount: 0,
+    laborCost: 0,
+    managementCost: 0,
+    legalFee: 0,
     auctionCost: 500,
+    appraisalFee: 0,
     evictionCost: 300,
+    brokerageFee: 0,
+    transferTax: 0,
+    miscCost: 0,
   });
 
   const [purchaseInfo, setPurchaseInfo] = useState<PurchaseInfo>({

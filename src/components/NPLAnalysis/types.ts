@@ -22,9 +22,23 @@ export interface ComparableCase {
 
 export interface AnalysisParams {
   marketPrice: number;
-  targetReturnRate: number;
-  auctionCost: number;
-  evictionCost: number;
+  // 조달 비용
+  fundingRate: number;          // 조달금리 (%)
+  holdingMonths: number;        // 예상 보유기간 (개월)
+  fundingAmount: number;        // 조달금액 (만원)
+  // 인건비·관리비
+  laborCost: number;            // 인건비 (만원)
+  managementCost: number;       // 관리비·출장비 (만원)
+  // 법무·경매 비용
+  legalFee: number;             // 법무사비용 (만원)
+  auctionCost: number;          // 경매비용 (만원)
+  appraisalFee: number;         // 감정평가비 (만원)
+  // 명도·처분 비용
+  evictionCost: number;         // 명도비 (만원)
+  brokerageFee: number;         // 중개수수료 (만원)
+  transferTax: number;          // 취득세·등록세 (만원)
+  // 기타
+  miscCost: number;             // 기타비용 (만원)
 }
 
 export interface CalculationResult {

@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { RightsItem } from "./types";
 import { Shield, Plus, X } from "lucide-react";
 
@@ -9,7 +10,46 @@ interface Props {
   onChange: (items: RightsItem[]) => void;
 }
 
-const PRESETS = ["선순위 임차보증금", "가처분", "유치권", "선순위 근저당", "체납 관리비"];
+// 실제 경매 권리분석에서 등장하는 권리 유형 분류
+const RIGHTS_CATEGORIES = [
+  {
+    label: "담보권",
+    items: ["선순위 근저당", "선순위 저당권", "선순위 질권"],
+  },
+  {
+    label: "압류·가압류",
+    items: ["가압류", "압류", "체납처분 압류 (국세)", "체납처분 압류 (지방세)", "교부청구"],
+  },
+  {
+    label: "용익물권",
+    items: ["지상권", "지역권", "전세권", "분묘기지권", "법정지상권"],
+  },
+  {
+    label: "임차권",
+    items: [
+      "선순위 임차보증금 (대항력)",
+      "소액임차보증금 (최우선변제)",
+      "확정일자 임차권",
+      "상가임차권",
+    ],
+  },
+  {
+    label: "기타 권리",
+    items: [
+      "유치권",
+      "가처분 (처분금지)",
+      "가처분 (점유이전금지)",
+      "가등기",
+      "예고등기",
+      "환매등기",
+      "신탁등기",
+      "체납 관리비",
+      "체납 공과금",
+    ],
+  },
+];
+
+const ALL_PRESETS = RIGHTS_CATEGORIES.flatMap((c) => c.items);
 
 export function RightsSection({ items, onChange }: Props) {
   const addItem = (name?: string) =>
@@ -32,46 +72,91 @@ export function RightsSection({ items, onChange }: Props) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex flex-wrap gap-1.5">
-          {PRESETS.map((p) => (
-            <Button
-              key={p}
-              variant="outline"
-              size="sm"
-              className="text-xs h-7"
-              onClick={() => addItem(p)}
-            >
-              + {p}
-            </Button>
+        {/* 카테고리별 프리셋 */}
+        <div className="space-y-2">
+          {RIGHTS_CATEGORIES.map((cat) => (
+            <div key={cat.label}>
+              <p className="text-xs font-medium text-muted-foreground mb-1">{cat.label}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {cat.items.map((p) => (
+                  <Button
+                    key={p}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => addItem(p)}
+                  >
+                    + {p}
+                  </Button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
 
-        {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <Input
-              className="flex-1"
-              placeholder="항목명"
-              value={item.name}
-              onChange={(e) => updateItem(i, "name", e.target.value)}
-            />
-            <Input
-              className="w-32"
-              type="number"
-              placeholder="금액 (만원)"
-              value={item.amount || ""}
-              onChange={(e) => updateItem(i, "amount", Number(e.target.value))}
-            />
-            <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => removeItem(i)}>
-              <X className="w-4 h-4" />
-            </Button>
+        {/* 입력된 항목 */}
+        {items.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-border">
+            {items.map((item, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Select
+                  value={ALL_PRESETS.includes(item.name) ? item.name : "__custom__"}
+                  onValueChange={(v) => {
+                    if (v === "__custom__") return;
+                    updateItem(i, "name", v);
+                  }}
+                >
+                  <SelectTrigger className="flex-1 text-xs h-9">
+                    <SelectValue placeholder="권리 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RIGHTS_CATEGORIES.map((cat) => (
+                      <div key={cat.label}>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                          {cat.label}
+                        </div>
+                        {cat.items.map((p) => (
+                          <SelectItem key={p} value={p} className="text-xs">
+                            {p}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    ))}
+                    <SelectItem value="__custom__" className="text-xs">
+                      직접 입력
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {(!ALL_PRESETS.includes(item.name)) && (
+                  <Input
+                    className="flex-1 text-xs h-9"
+                    placeholder="항목명 직접 입력"
+                    value={item.name}
+                    onChange={(e) => updateItem(i, "name", e.target.value)}
+                  />
+                )}
+
+                <Input
+                  className="w-28 text-xs h-9"
+                  type="number"
+                  placeholder="금액 (만원)"
+                  value={item.amount || ""}
+                  onChange={(e) => updateItem(i, "amount", Number(e.target.value))}
+                />
+                <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => removeItem(i)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
 
         <div className="flex justify-between items-center pt-2 border-t border-border">
           <Button variant="ghost" size="sm" onClick={() => addItem()}>
-            <Plus className="w-4 h-4 mr-1" /> 항목 추가
+            <Plus className="w-4 h-4 mr-1" /> 직접 추가
           </Button>
-          <span className="text-sm font-semibold">
+          <span className="text-sm font-semibold tabular-nums">
             합계: {total.toLocaleString()} 만원
           </span>
         </div>

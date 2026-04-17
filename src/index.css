@@ -141,23 +141,61 @@
 
 
 @media print {
-  /* 헤더, 버튼, 탭 UI 숨기기 */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 5%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 5%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 35%;
+    --border: 0 0% 75%;
+    --primary: 220 60% 22%;
+    --primary-foreground: 0 0% 100%;
+    --success: 152 55% 30%;
+    --destructive: 0 72% 40%;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    margin: 12mm;
+    size: A4;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .min-h-screen {
+    min-height: 0 !important;
+  }
+
+  .sticky {
+    position: static !important;
+  }
+
   header,
   [role="tablist"],
-  button,
-  .sticky {
+  button {
     display: none !important;
   }
 
-  /* 탭 콘텐츠 모두 표시 */
-  [role="tabpanel"] {
+  [role="tabpanel"],
+  [data-state="inactive"] {
     display: block !important;
     opacity: 1 !important;
-    max-height: none !important;
+    visibility: visible !important;
+    height: auto !important;
     overflow: visible !important;
   }
 
-  /* VerdictSection 애니메이션 강제 표시 */
+  [hidden] {
+    display: block !important;
+  }
+
   .transition-all {
     opacity: 1 !important;
     transform: none !important;
@@ -165,23 +203,40 @@
     overflow: visible !important;
   }
 
-  /* 배경색 인쇄 허용 */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* 페이지 여백 */
-  @page {
-    margin: 15mm;
-  }
-
-  body {
+  input, textarea, select {
+    border: 1px solid #999 !important;
     background: white !important;
+    color: black !important;
+    -webkit-text-fill-color: black !important;
   }
 
-  /* 카드 테두리 유지 */
-  .border {
-    border: 1px solid #ccc !important;
+  .text-muted-foreground {
+    color: #555 !important;
+    -webkit-text-fill-color: #555 !important;
+  }
+
+  .text-foreground {
+    color: #111 !important;
+    -webkit-text-fill-color: #111 !important;
+  }
+
+  .text-emerald-600 { color: #059669 !important; }
+  .text-red-600 { color: #dc2626 !important; }
+  .text-amber-600 { color: #d97706 !important; }
+
+  .bg-emerald-500\/10 { background-color: #d1fae5 !important; }
+  .bg-red-500\/10 { background-color: #fee2e2 !important; }
+  .bg-amber-500\/10 { background-color: #fef3c7 !important; }
+
+  .shadow-lg, .shadow-xl,
+  [class*="shadow-["] {
+    box-shadow: none !important;
+  }
+
+  .page-break-inside-avoid,
+  [class*="Card"],
+  .rounded-lg {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }

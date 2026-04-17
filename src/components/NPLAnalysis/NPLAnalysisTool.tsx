@@ -114,6 +114,12 @@ export function NPLAnalysisTool() {
               <p className="text-xs text-muted-foreground">부실채권 매입 의사결정 지원 도구</p>
             </div>
           </div>
+          <button
+  onClick={() => window.print()}
+  className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border border-border hover:bg-muted transition-colors mr-2"
+>
+  🖨️ 인쇄
+</button>
           <ExcelUpload onImport={handleImport} />
         </div>
       </header>

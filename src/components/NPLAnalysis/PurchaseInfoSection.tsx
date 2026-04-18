@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PurchaseInfo } from "./types";
 import { Building2 } from "lucide-react";
+import { FormattedNumberInput } from "./FormattedNumberInput";
 
 interface Props {
   data: PurchaseInfo;
@@ -40,19 +41,6 @@ export function PurchaseInfoSection({ data, onChange }: Props) {
       next.overdueRate = (value as number) + 3;
     }
 
-    // 대출잔액 + 이율 + 연체이율 + 연체일수 → 이자 자동계산
-    if (key === "interestRate" || key === "overdueRate" || key === "overdueDays" || key === "loanBalance") {
-      const rate = key === "interestRate" ? (value as number) : next.interestRate;
-      const overdueRate = key === "interestRate" ? (value as number) + 3 : (key === "overdueRate" ? (value as number) : next.overdueRate);
-      const overdueDays = key === "overdueDays" ? (value as number) : next.overdueDays;
-      if (next.loanBalance > 0 && overdueDays > 0) {
-        const normalInterest = Math.round((next.loanBalance * (rate / 100)) / 365 * overdueDays);
-        const overdueInterest = Math.round((next.loanBalance * (overdueRate / 100)) / 365 * overdueDays);
-        next.interest = normalInterest + overdueInterest;
-        next.principalInterest = next.loanBalance + next.interest;
-      }
-    }
-
     onChange(next);
   };
 
@@ -68,11 +56,22 @@ export function PurchaseInfoSection({ data, onChange }: Props) {
     </div>
   );
 
+  const moneyField = (label: string, key: keyof PurchaseInfo, placeholder = "0") => (
+    <div>
+      <label className="input-label">{label}</label>
+      <FormattedNumberInput
+        placeholder={placeholder}
+        value={data[key] as number}
+        onChange={(v) => update(key, v)}
+      />
+    </div>
+  );
+
   const readonlyNumField = (label: string, value: number) => (
     <div>
       <label className="input-label">{label}</label>
       <div className="h-10 px-3 rounded-md border border-input bg-muted/50 flex items-center text-sm font-semibold tabular-nums text-foreground">
-        {formatNum(value)} 만원
+        {formatNum(value)} 원
       </div>
     </div>
   );
@@ -97,34 +96,30 @@ export function PurchaseInfoSection({ data, onChange }: Props) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {textField("매각사", "seller", "OO캐피탈")}
           {textField("상품번호", "productNumber", "NPL-2024-001")}
           {textField("이름", "name", "홍길동")}
-          {textField("주소", "address", "서울 강남구 역삼동")}
+        </div>
+        {textField("주소", "address", "서울 강남구 역삼동 ...")}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {moneyField("대출잔액 (원)", "loanBalance")}
+          {moneyField("이자 (원)", "interest")}
+          {readonlyNumField("원리금 (원)", data.principalInterest)}
+          {moneyField("법비용 (원)", "legalCost")}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {numField("대출잔액 (만원)", "loanBalance")}
-          {numField("이자 (만원)", "interest")}
-          {readonlyNumField("원리금 (만원)", data.principalInterest)}
-          {numField("법비용 (만원)", "legalCost")}
+          {moneyField("선순위 원금 (원)", "seniorPrincipal")}
+          {readonlyNumField("선순위최고액 (원)", data.seniorMaxAmount)}
+          {readonlyNumField("선순위 110% (원)", data.senior110)}
+          {moneyField("등기설정금액 (원)", "mortgageRegistration", "채권최고액")}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {numField("선순위 원금 (만원)", "seniorPrincipal")}
-          {readonlyNumField("선순위최고액 (만원)", data.seniorMaxAmount)}
-          {readonlyNumField("선순위 110% (만원)", data.senior110)}
           {numField("이율 (%)", "interestRate")}
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {numField("연체이율 (%)", "overdueRate")}
           {numField("연체일수", "overdueDays")}
           {textField("비고", "remarks", "특이사항")}
         </div>
-        {data.loanBalance > 0 && data.overdueDays > 0 && (
-          <div className="text-xs text-muted-foreground bg-muted/50 rounded px-3 py-2">
-            💡 이자 자동계산: 대출잔액 × (이율 + 연체이율) ÷ 365 × 연체일수 = <span className="font-semibold text-foreground">{formatNum(data.interest)} 만원</span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

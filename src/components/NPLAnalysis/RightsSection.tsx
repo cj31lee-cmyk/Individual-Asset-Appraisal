@@ -9,6 +9,7 @@ import { Shield, Plus, X, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { FormattedNumberInput } from "./FormattedNumberInput";
 
 interface Props {
   items: RightsItem[];
@@ -167,12 +168,11 @@ export function RightsSection({ items, onChange }: Props) {
                   </PopoverContent>
                 </Popover>
 
-                <Input
-                  className="w-28 text-xs h-9"
-                  type="number"
-                  placeholder="금액 (만원)"
-                  value={item.amount || ""}
-                  onChange={(e) => updateItem(i, "amount", Number(e.target.value))}
+                <FormattedNumberInput
+                  className="w-36 text-xs h-9"
+                  placeholder="금액"
+                  value={item.amount}
+                  onChange={(v) => updateItem(i, "amount", v)}
                 />
                 <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => removeItem(i)}>
                   <X className="w-4 h-4" />
@@ -187,7 +187,7 @@ export function RightsSection({ items, onChange }: Props) {
             <Plus className="w-4 h-4 mr-1" /> 직접 추가
           </Button>
           <span className="text-sm font-semibold tabular-nums">
-            합계: {total.toLocaleString()} 만원
+            합계: {total.toLocaleString()} 원
           </span>
         </div>
       </CardContent>

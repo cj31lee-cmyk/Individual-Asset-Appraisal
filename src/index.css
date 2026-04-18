@@ -133,8 +133,18 @@
 
 
 @media print {
-  body > * { display: none !important; }
-  .print-only { display: block !important; position: static !important; }
+  .no-print { display: none !important; }
+
+  @page { size: A4; margin: 12mm; }
+  html, body {
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* Sticky header would otherwise repeat or block content */
+  header.sticky { position: static !important; }
+  /* Avoid splitting cards across pages where possible */
+  .card, [class*="rounded-lg"][class*="border"] { break-inside: avoid; }
 }
 
 

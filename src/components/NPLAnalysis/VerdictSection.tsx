@@ -172,7 +172,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
               <p className="text-xs text-muted-foreground mb-1">총 매입비용</p>
               <p className="text-lg font-black tabular-nums text-foreground">
                 {formatNum(analysis.totalCostAll)}
-                <span className="text-xs font-normal ml-1">만원</span>
+                <span className="text-xs font-normal ml-1">원</span>
               </p>
             </div>
             <div className="bg-card/80 rounded-lg p-3 text-center">
@@ -181,7 +181,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
                 analysis.finalProfit >= 0 ? "text-emerald-600" : "text-red-600"
               }`}>
                 {formatNum(analysis.finalProfit)}
-                <span className="text-xs font-normal ml-1">만원</span>
+                <span className="text-xs font-normal ml-1">원</span>
               </p>
             </div>
             <div className="bg-card/80 rounded-lg p-3 text-center">
@@ -209,32 +209,32 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
           <p className="text-xs font-semibold text-muted-foreground mb-2">[ 매입비용 ]</p>
           <div className="calc-row">
             <span className="calc-label">원리금 (대출잔액+이자)</span>
-            <span className="calc-value">{formatNum(analysis.principalInterest)} 만원</span>
+            <span className="calc-value">{formatNum(analysis.principalInterest)} 원</span>
           </div>
           <div className="calc-row">
             <span className="calc-label">할인율</span>
             <span className="calc-value">{analysis.discountRate}%</span>
           </div>
           <div className="calc-row">
-            <span className="calc-label">① 채권매입가 (회수예상가 × 할인율)</span>
-            <span className="calc-value font-semibold">{formatNum(analysis.loanPurchasePrice)} 만원</span>
+            <span className="calc-label">① 채권매입가 (할인 적용된 금액 = 회수예상가 - 최종매입가)</span>
+            <span className="calc-value font-semibold">{formatNum(analysis.loanPurchasePrice)} 원</span>
           </div>
           <div className="calc-row">
             <span className="calc-label">② 분석비용 (근저당+감평+경매)</span>
-            <span className="calc-value">{formatNum(analysis.analysisCost)} 만원</span>
+            <span className="calc-value">{formatNum(analysis.analysisCost)} 원</span>
           </div>
           <div className="calc-row">
             <span className="calc-label">③ 조달이자 ({analysis.holdingMonths}개월)</span>
-            <span className="calc-value">{formatNum(analysis.fundingCost)} 만원</span>
+            <span className="calc-value">{formatNum(analysis.fundingCost)} 원</span>
           </div>
           <div className="calc-row">
             <span className="calc-label">④ 운영비용 (인건비·관리비·기타)</span>
-            <span className="calc-value">{formatNum(analysis.totalOperatingCost - analysis.fundingCost)} 만원</span>
+            <span className="calc-value">{formatNum(analysis.totalOperatingCost - analysis.fundingCost)} 원</span>
           </div>
           <div className="calc-row border-t-2 border-border bg-muted/30 rounded -mx-4 px-4">
             <span className="calc-label font-semibold text-foreground">총 매입비용 (①+②+③+④)</span>
             <span className="text-base font-bold tabular-nums text-foreground">
-              {formatNum(analysis.totalCostAll)} 만원
+              {formatNum(analysis.totalCostAll)} 원
             </span>
           </div>
 
@@ -242,7 +242,7 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
           <p className="text-xs font-semibold text-muted-foreground mb-2">[ 경매 배당 (회수) ]</p>
           <div className="calc-row">
             <span className="calc-label">KB시세</span>
-            <span className="calc-value">{formatNum(analysis.kbPrice)} 만원</span>
+            <span className="calc-value">{formatNum(analysis.kbPrice)} 원</span>
           </div>
           <div className="calc-row">
             <span className="calc-label">낙찰가율</span>
@@ -250,18 +250,18 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
           </div>
           <div className="calc-row">
             <span className="calc-label">매입예상가 (KB시세×낙찰가율)</span>
-            <span className="calc-value">{formatNum(analysis.estimatedPurchase)} 만원</span>
+            <span className="calc-value">{formatNum(analysis.estimatedPurchase)} 원</span>
           </div>
           <div className="calc-row">
             <span className="calc-label">선순위 110%</span>
-            <span className="calc-value text-red-600">-{formatNum(analysis.senior110)} 만원</span>
+            <span className="calc-value text-red-600">-{formatNum(analysis.senior110)} 원</span>
           </div>
           <div className="calc-row border-t-2 border-border bg-muted/30 rounded -mx-4 px-4">
             <span className="calc-label font-semibold text-foreground">배당금 (회수예상가)</span>
             <span className={`text-base font-bold tabular-nums ${
               analysis.auctionDividend >= 0 ? "text-emerald-600" : "text-red-600"
             }`}>
-              {formatNum(analysis.auctionDividend)} 만원
+              {formatNum(analysis.auctionDividend)} 원
             </span>
           </div>
 
@@ -269,18 +269,18 @@ export function VerdictSection({ purchaseInfo, priceAnalysis, params }: Props) {
           <p className="text-xs font-semibold text-muted-foreground mb-2">[ 최종 수익 ]</p>
           <div className="calc-row">
             <span className="calc-label">배당금 (회수)</span>
-            <span className="calc-value text-emerald-600">{formatNum(analysis.auctionDividend)} 만원</span>
+            <span className="calc-value text-emerald-600">{formatNum(analysis.auctionDividend)} 원</span>
           </div>
           <div className="calc-row">
             <span className="calc-label">총 매입비용</span>
-            <span className="calc-value text-red-600">-{formatNum(analysis.totalCostAll)} 만원</span>
+            <span className="calc-value text-red-600">-{formatNum(analysis.totalCostAll)} 원</span>
           </div>
           <div className="calc-row border-t-2 border-border bg-muted/30 rounded -mx-4 px-4">
             <span className="calc-label font-semibold text-foreground">최종 수익</span>
             <span className={`text-base font-bold tabular-nums ${
               analysis.finalProfit >= 0 ? "text-emerald-600" : "text-red-600"
             }`}>
-              {formatNum(analysis.finalProfit)} 만원
+              {formatNum(analysis.finalProfit)} 원
             </span>
           </div>
 

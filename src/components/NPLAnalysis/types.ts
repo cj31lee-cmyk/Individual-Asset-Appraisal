@@ -57,10 +57,19 @@ export interface PurchaseInfo {
   seniorMaxAmount: number;  // 선순위최고액
   senior110: number;        // 선순위 110%
   seniorPrincipal: number;  // 선순위 원금
+  mortgageRegistration: number; // 등기설정금액 (채권최고액)
   interestRate: number;     // 이율
   overdueRate: number;      // 연체이율
   overdueDays: number;      // 연체일수
   remarks: string;          // 비고
+}
+
+export interface CaseData {
+  purchaseInfo: PurchaseInfo;
+  priceAnalysis: PriceAnalysisInfo;
+  params: AnalysisParams;
+  rights: RightsItem[];
+  showVerdict: boolean;
 }
 
 // 섹터 2: 매입가격 분석 정보

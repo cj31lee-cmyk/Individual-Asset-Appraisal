@@ -20,6 +20,7 @@ const COLUMN_MAP: Record<string, keyof PurchaseInfo> = {
   "선순위최고액": "seniorMaxAmount",
   "선순위110": "senior110",
   "선순위원금": "seniorPrincipal",
+  "등기설정금액": "mortgageRegistration",
   "이율": "interestRate",
   "연체이율": "overdueRate",
   "연체일수": "overdueDays",
@@ -29,7 +30,7 @@ const COLUMN_MAP: Record<string, keyof PurchaseInfo> = {
 const DEFAULT_PURCHASE: PurchaseInfo = {
   seller: "", productNumber: "", name: "", address: "",
   loanBalance: 0, interest: 0, principalInterest: 0, legalCost: 0,
-  seniorMaxAmount: 0, senior110: 0, seniorPrincipal: 0,
+  seniorMaxAmount: 0, senior110: 0, seniorPrincipal: 0, mortgageRegistration: 0,
   interestRate: 0, overdueRate: 0, overdueDays: 0, remarks: "",
 };
 

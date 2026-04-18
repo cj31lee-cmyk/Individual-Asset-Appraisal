@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import type { AnalysisParams, PriceAnalysisInfo } from "./types";
 import { Settings, Wallet, Users, MoreHorizontal } from "lucide-react";
 import { useMemo, useEffect } from "react";
+import { FormattedNumberInput } from "./FormattedNumberInput";
 
 interface Props {
   data: AnalysisParams;
@@ -70,11 +71,22 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
     </div>
   );
 
+  const moneyField = (label: string, key: keyof AnalysisParams, placeholder = "0") => (
+    <div>
+      <label className="input-label">{label}</label>
+      <FormattedNumberInput
+        placeholder={placeholder}
+        value={data[key] as number}
+        onChange={(v) => update(key, v)}
+      />
+    </div>
+  );
+
   const autoField = (label: string, value: number, formula: string) => (
     <div>
       <label className="input-label">{label}</label>
       <div className="h-10 px-3 rounded-md border border-input flex items-center text-sm font-semibold tabular-nums bg-muted/50 text-foreground">
-        {formatNum(value)} 만원
+        {formatNum(value)} 원
       </div>
       <p className="text-[10px] text-muted-foreground mt-0.5">{formula}</p>
     </div>
@@ -94,11 +106,11 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
           <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mb-2">
             <Wallet className="w-3.5 h-3.5" /> 조달 비용
           </p>
-          {numField("조달금액 (만원)", "fundingAmount", "0")}
+          {moneyField("조달금액 (원)", "fundingAmount", "0")}
           <div className="grid grid-cols-3 gap-2 mt-2">
             {numField("조달금리 (%)", "fundingRate", "5.5")}
             {numField("보유기간 (개월)", "holdingMonths", "12")}
-            {autoField("조달이자", fundingCost, "금액 × 금리 × 기간/12")}
+            {autoField("조달이자 (원)", fundingCost, "금액 × 금리 × 기간/12")}
           </div>
         </div>
 
@@ -110,8 +122,8 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
             <Users className="w-3.5 h-3.5" /> 인건비·관리비
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {numField("인건비 (만원)", "laborCost", "120")}
-            {numField("관리비·출장비 (만원)", "managementCost", "60")}
+            {moneyField("인건비 (원)", "laborCost", "0")}
+            {moneyField("관리비·출장비 (원)", "managementCost", "0")}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1">
             기본: 0원 (필요 시 직접 입력)
@@ -125,7 +137,7 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
           <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mb-2">
             <MoreHorizontal className="w-3.5 h-3.5" /> 기타
           </p>
-          {numField("기타비용 (만원)", "miscCost", "0")}
+          {moneyField("기타비용 (원)", "miscCost", "0")}
         </div>
 
         {/* 비용 합계 */}
@@ -133,7 +145,7 @@ export function ParamsSection({ data, priceAnalysis, onChange }: Props) {
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-foreground">총 비용 합계</span>
             <span className="text-lg font-bold tabular-nums text-accent-foreground">
-              {formatNum(totalCost)} 만원
+              {formatNum(totalCost)} 원
             </span>
           </div>
           <div className="text-xs text-muted-foreground">

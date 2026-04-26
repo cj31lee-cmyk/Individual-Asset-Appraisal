@@ -2,8 +2,8 @@ import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import { fetchRealprice, lastNMonths } from "./src/server/realprice";
-import { generateInsight, type ClaudeInsightInput } from "./src/server/claude";
+import { fetchRealprice, lastNMonths } from "./api/_lib/realprice";
+import { generateInsight, type ClaudeInsightInput } from "./api/_lib/claude";
 
 // Dev 환경에서 /api/realprice를 처리. Vercel production에서는 api/realprice.ts가 같은 일을 함.
 function realpriceDevMiddleware(): Plugin {

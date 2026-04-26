@@ -2,7 +2,7 @@
 // 표준 Node http (req, res) 스타일. dev 미들웨어와 동일 패턴.
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { generateInsight, type ClaudeInsightInput } from "../src/server/claude";
+import { generateInsight, type ClaudeInsightInput } from "./_lib/claude";
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   try {

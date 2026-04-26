@@ -3,13 +3,48 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { fetchRealprice, lastNMonths } from "./api/_lib/realprice";
-import { generateInsight, type ClaudeInsightInput } from "./api/_lib/claude";
+import { generateInsight, generateComplexReport, type ClaudeInsightInput, type ComplexReportInput } from "./api/_lib/claude";
 
 // Dev 환경에서 /api/realprice를 처리. Vercel production에서는 api/realprice.ts가 같은 일을 함.
 function realpriceDevMiddleware(): Plugin {
   return {
     name: "realprice-dev",
     configureServer(server) {
+      // 단지 종합 리포트 — POST /api/complex-report (Sonnet 4.6)
+      server.middlewares.use("/api/complex-report", async (req, res) => {
+        try {
+          if (req.method !== "POST") {
+            res.statusCode = 405;
+            res.setHeader("content-type", "application/json");
+            res.end(JSON.stringify({ error: "POST only" }));
+            return;
+          }
+          const apiKey = process.env.ANTHROPIC_API_KEY;
+          if (!apiKey) {
+            res.statusCode = 500;
+            res.setHeader("content-type", "application/json");
+            res.end(JSON.stringify({ error: "ANTHROPIC_API_KEY not set in .env.local" }));
+            return;
+          }
+          const chunks: Buffer[] = [];
+          for await (const chunk of req) chunks.push(chunk as Buffer);
+          const body = JSON.parse(Buffer.concat(chunks).toString("utf-8")) as ComplexReportInput;
+          if (!body?.region || !body?.complexName) {
+            res.statusCode = 400;
+            res.setHeader("content-type", "application/json");
+            res.end(JSON.stringify({ error: "region and complexName required" }));
+            return;
+          }
+          const result = await generateComplexReport(body, apiKey);
+          res.setHeader("content-type", "application/json");
+          res.end(JSON.stringify(result));
+        } catch (e) {
+          res.statusCode = 500;
+          res.setHeader("content-type", "application/json");
+          res.end(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }));
+        }
+      });
+
       // Claude 인사이트 — POST /api/insight
       server.middlewares.use("/api/insight", async (req, res) => {
         try {

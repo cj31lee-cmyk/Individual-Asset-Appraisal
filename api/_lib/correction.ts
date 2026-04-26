@@ -5,7 +5,8 @@ import type { RealpriceItem } from "./realprice";
 
 const SQM_PER_PYEONG = 3.305785;
 const HALF_LIFE_MONTHS = 6;        // 시간 가중치 반감기
-const TRIM_PERCENT = 0.05;         // 양 끝 5% 제외 (트림드 평균)
+// 이상치 제거: IQR(사분위수 범위) 기반 — Q1-1.5*IQR ~ Q3+1.5*IQR 범위 밖을 제외.
+// 표본이 4건 미만이면 트림하지 않음.
 
 export interface CorrectionResult {
   // 보정 결과
@@ -43,10 +44,18 @@ export function correctMarketStats(items: RealpriceItem[]): CorrectionResult | n
       pyeongPrice: it.dealAmount / (it.excluUseAr / SQM_PER_PYEONG),
     }));
 
-  // 3. 이상치 제거 (평당가 기준 트림드 — 양 끝 5%씩)
+  // 3. 이상치 제거 (평당가 기준 IQR 트림)
   const sortedByPp = [...withPyeong].sort((a, b) => a.pyeongPrice - b.pyeongPrice);
-  const trimN = Math.floor(sortedByPp.length * TRIM_PERCENT);
-  const trimmed = sortedByPp.slice(trimN, sortedByPp.length - trimN);
+  const trimmed = (() => {
+    const n = sortedByPp.length;
+    if (n < 4) return sortedByPp;
+    const q1 = sortedByPp[Math.floor(n * 0.25)].pyeongPrice;
+    const q3 = sortedByPp[Math.floor(n * 0.75)].pyeongPrice;
+    const iqr = q3 - q1;
+    const low = q1 - 1.5 * iqr;
+    const high = q3 + 1.5 * iqr;
+    return sortedByPp.filter((x) => x.pyeongPrice >= low && x.pyeongPrice <= high);
+  })();
   const excludedOutlier = sortedByPp.length - trimmed.length;
 
   if (trimmed.length === 0) return null;

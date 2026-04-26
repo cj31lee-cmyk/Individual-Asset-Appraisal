@@ -14,6 +14,7 @@ import {
   formatManwon,
   MainMetric,
   SecondaryRow,
+  InsightDisplay,
   type RealpriceResult,
   type ClaudeInsight,
 } from "./marketShared";
@@ -71,6 +72,17 @@ export function RegionBidRateSection() {
     if (!correction || !surfaceMean) return;
     setInsightLoading(true); setInsightError(""); setInsight(null);
     try {
+      const itemsForClaude = result.area.recent.slice(0, 30).map((it) => ({
+        aptNm: it.aptNm,
+        umdNm: it.umdNm,
+        excluUseAr: it.excluUseAr,
+        floor: it.floor,
+        dealAmount: it.dealAmount,
+        dealYear: it.dealYear,
+        dealMonth: it.dealMonth,
+        dealDay: it.dealDay,
+        dealingGbn: it.dealingGbn,
+      }));
       const body = {
         region: resultMeta.regionLabel,
         period: resultMeta.periodLabel,
@@ -82,6 +94,7 @@ export function RegionBidRateSection() {
         trendDirection: correction.trendDirection,
         trendDeltaPct: correction.trendDeltaPct,
         confidenceStars: correction.confidenceStars,
+        recentItems: itemsForClaude,
       };
       const res = await fetch("/api/insight", {
         method: "POST",
@@ -338,15 +351,14 @@ export function RegionBidRateSection() {
                       </div>
                     )}
                     {insight && (
-                      <div className="space-y-2 text-sm bg-background/60 rounded-md p-3 border border-primary/15">
-                        <div className="flex items-start gap-2">
-                          <Sparkles className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                          <p className="text-foreground">{insight.insight}</p>
+                      <div className="space-y-3">
+                        <InsightDisplay insight={insight} ruleCorrectedAmount={correction.correctedMeanAmount} />
+                        <div className="flex justify-end">
+                          <Button onClick={handleInsight} variant="ghost" size="sm" className="h-7 text-xs gap-1">
+                            <Sparkles className="w-3 h-3" />
+                            다시 분석
+                          </Button>
                         </div>
-                        {insight.confidenceNote && (
-                          <p className="text-xs text-muted-foreground pl-6">💬 {insight.confidenceNote}</p>
-                        )}
-                        <Button onClick={handleInsight} variant="ghost" size="sm" className="ml-auto h-7 text-xs">🔄 다시 분석</Button>
                       </div>
                     )}
                   </div>

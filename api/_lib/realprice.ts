@@ -24,20 +24,24 @@ export interface RealpriceItem {
 }
 
 export interface AreaStats {
-  count: number;
-  meanAmount: number;       // 만원
-  medianAmount: number;
-  meanPyeongPrice: number;  // 평당 만원
-  recent: RealpriceItem[];  // 최신순 상위 20건
+  count: number;             // 전체 거래 건수
+  meanAmount: number;        // 정제 평균 (IQR 트림)
+  medianAmount: number;      // 중위 (전체)
+  meanPyeongPrice: number;   // 정제 평균 평당가
+  recent: RealpriceItem[];   // 최신 20건 (전체, outlier 포함)
+  excludedOutliers: number;  // IQR 트림으로 제외된 건수
+  rawMeanAmount: number;     // 원본 단순 평균 (참고용)
 }
 
 export interface ComplexStats {
   aptName: string;
-  count: number;
-  meanAmount: number;
-  meanArea: number;        // ㎡
-  meanPyeongPrice: number; // 평당 만원
-  items: RealpriceItem[];  // 최신순 상위 50건
+  count: number;             // 매칭 건수 (전체)
+  meanAmount: number;        // 정제 평균 (IQR 트림)
+  meanArea: number;          // ㎡
+  meanPyeongPrice: number;   // 정제 평당가
+  items: RealpriceItem[];    // 최신순 50건 (전체)
+  excludedOutliers: number;
+  rawMeanAmount: number;
 }
 
 export interface RealpriceResult {
@@ -50,6 +54,8 @@ export interface RealpriceResult {
   // 룰 기반 보정 결과 (이상치 제거, 시간 가중, 추세, 신뢰도)
   areaCorrection: CorrectionResult | null;
   complexCorrection: CorrectionResult | null;
+  // 그 지역 거래 많은 단지 TOP — 단지명 검색 미스 시 추천용
+  topComplexes: { name: string; count: number; umdNm: string }[];
 }
 
 export interface RealpriceQuery {
@@ -94,7 +100,7 @@ export async function fetchRealprice(
   let filtered = allItems;
   if (query.aptName) {
     const needle = normalize(query.aptName);
-    filtered = filtered.filter((it) => normalize(it.aptNm).includes(needle));
+    filtered = filtered.filter((it) => matchAptName(needle, normalize(it.aptNm)));
   }
   if (query.umdName) {
     const needle = normalize(query.umdName);
@@ -120,7 +126,39 @@ export async function fetchRealprice(
     complex: hasComplexFilter ? computeComplexStats(filtered, complexLabel) : null,
     areaCorrection: correctMarketStats(allItems),
     complexCorrection: hasComplexFilter && filtered.length > 0 ? correctMarketStats(filtered) : null,
+    topComplexes: getTopComplexes(allItems, 12),
   };
+}
+
+// 단지명 매칭: 양방향 substring + 글자 chunk 매칭으로 사용자 입력 순서 변화·오타 일부 흡수.
+function matchAptName(needle: string, hay: string): boolean {
+  // 1. 정방향: 사용자 입력이 단지명에 포함됨
+  if (hay.includes(needle)) return true;
+  // 2. 역방향: 사용자 입력이 단지명을 포함 (사용자가 더 구체적으로 입력)
+  if (needle.includes(hay)) return true;
+  // 3. 3글자 sub-chunk가 단지명에 포함되면서, needle 길이의 70% 이상 chunk가 매칭
+  if (needle.length < 4) return false;
+  let matched = 0;
+  let total = 0;
+  for (let i = 0; i + 3 <= needle.length; i++) {
+    total++;
+    if (hay.includes(needle.slice(i, i + 3))) matched++;
+  }
+  return total > 0 && matched / total >= 0.7;
+}
+
+function getTopComplexes(items: RealpriceItem[], limit: number): { name: string; count: number; umdNm: string }[] {
+  const counter = new Map<string, { count: number; umdNm: string }>();
+  for (const it of items) {
+    if (!it.aptNm) continue;
+    const e = counter.get(it.aptNm);
+    if (e) e.count++;
+    else counter.set(it.aptNm, { count: 1, umdNm: it.umdNm });
+  }
+  return [...counter.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, limit)
+    .map(([name, v]) => ({ name, count: v.count, umdNm: v.umdNm }));
 }
 
 function normalize(s: string): string {
@@ -171,35 +209,65 @@ function dateKey(it: RealpriceItem): number {
   return it.dealYear * 10000 + it.dealMonth * 100 + it.dealDay;
 }
 
+// IQR(사분위수 범위) 기반 outlier 필터.
+// 평당가 기준으로 Q1-1.5*IQR ~ Q3+1.5*IQR 범위 밖을 제외.
+// 표본이 4건 미만이면 트림하지 않음 (통계적 의미 없음).
+function trimByIQR(items: RealpriceItem[]): { kept: RealpriceItem[]; excluded: RealpriceItem[] } {
+  const valid = items.filter((it) => it.dealAmount > 0 && it.excluUseAr > 0);
+  if (valid.length < 4) return { kept: valid, excluded: [] };
+  const withPp = valid.map((it) => ({
+    item: it,
+    pp: it.dealAmount / (it.excluUseAr / SQM_PER_PYEONG),
+  }));
+  const sorted = [...withPp].sort((a, b) => a.pp - b.pp);
+  const n = sorted.length;
+  const q1 = sorted[Math.floor(n * 0.25)].pp;
+  const q3 = sorted[Math.floor(n * 0.75)].pp;
+  const iqr = q3 - q1;
+  const low = q1 - 1.5 * iqr;
+  const high = q3 + 1.5 * iqr;
+  const kept: RealpriceItem[] = [];
+  const excluded: RealpriceItem[] = [];
+  for (const w of withPp) {
+    if (w.pp >= low && w.pp <= high) kept.push(w.item);
+    else excluded.push(w.item);
+  }
+  return { kept, excluded };
+}
+
 function computeAreaStats(items: RealpriceItem[]): AreaStats {
-  const amounts = items.map((it) => it.dealAmount).filter((v) => v > 0);
-  const pyeongPrices = items
-    .filter((it) => it.dealAmount > 0 && it.excluUseAr > 0)
-    .map((it) => it.dealAmount / (it.excluUseAr / SQM_PER_PYEONG));
+  const allAmounts = items.map((it) => it.dealAmount).filter((v) => v > 0);
+  const { kept, excluded } = trimByIQR(items);
+  const amounts = kept.map((it) => it.dealAmount);
+  const pyeongPrices = kept.map((it) => it.dealAmount / (it.excluUseAr / SQM_PER_PYEONG));
   const recent = [...items].sort((a, b) => dateKey(b) - dateKey(a)).slice(0, 20);
   return {
     count: items.length,
     meanAmount: Math.round(mean(amounts)),
-    medianAmount: Math.round(median(amounts)),
+    medianAmount: Math.round(median(allAmounts)),
     meanPyeongPrice: Math.round(mean(pyeongPrices)),
     recent,
+    excludedOutliers: excluded.length,
+    rawMeanAmount: Math.round(mean(allAmounts)),
   };
 }
 
 function computeComplexStats(items: RealpriceItem[], aptName: string): ComplexStats {
-  const amounts = items.map((it) => it.dealAmount).filter((v) => v > 0);
-  const areas = items.map((it) => it.excluUseAr).filter((v) => v > 0);
-  const pyeongPrices = items
-    .filter((it) => it.dealAmount > 0 && it.excluUseAr > 0)
-    .map((it) => it.dealAmount / (it.excluUseAr / SQM_PER_PYEONG));
+  const allAmounts = items.map((it) => it.dealAmount).filter((v) => v > 0);
+  const allAreas = items.map((it) => it.excluUseAr).filter((v) => v > 0);
+  const { kept, excluded } = trimByIQR(items);
+  const amounts = kept.map((it) => it.dealAmount);
+  const pyeongPrices = kept.map((it) => it.dealAmount / (it.excluUseAr / SQM_PER_PYEONG));
   const sorted = [...items].sort((a, b) => dateKey(b) - dateKey(a));
   return {
     aptName,
     count: items.length,
     meanAmount: Math.round(mean(amounts)),
-    meanArea: Math.round(mean(areas) * 10) / 10,
+    meanArea: Math.round(mean(allAreas) * 10) / 10,
     meanPyeongPrice: Math.round(mean(pyeongPrices)),
     items: sorted.slice(0, 50),
+    excludedOutliers: excluded.length,
+    rawMeanAmount: Math.round(mean(allAmounts)),
   };
 }
 

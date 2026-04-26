@@ -26,6 +26,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       24,
     );
     const aptName = url.searchParams.get("aptName")?.trim();
+    const umdName = url.searchParams.get("umdName")?.trim();
     const areaMin = url.searchParams.has("areaMin")
       ? parseFloat(url.searchParams.get("areaMin")!)
       : undefined;
@@ -34,7 +35,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       : undefined;
 
     const result = await fetchRealprice(
-      { lawdCd, months: lastNMonths(monthCount), aptName: aptName || undefined, areaMin, areaMax },
+      {
+        lawdCd,
+        months: lastNMonths(monthCount),
+        aptName: aptName || undefined,
+        umdName: umdName || undefined,
+        areaMin,
+        areaMax,
+      },
       apiKey,
     );
     res.setHeader("content-type", "application/json");

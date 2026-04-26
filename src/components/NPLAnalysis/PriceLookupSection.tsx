@@ -23,6 +23,7 @@ import {
 export function PriceLookupSection() {
   const [sido, setSido] = useState<SidoName | "">("");
   const [sigunguCode, setSigunguCode] = useState<string>("");
+  const [umdName, setUmdName] = useState<string>("");
   const [aptName, setAptName] = useState<string>("");
   const [areaMin, setAreaMin] = useState<string>("");
   const [areaMax, setAreaMax] = useState<string>("");
@@ -51,6 +52,7 @@ export function PriceLookupSection() {
     try {
       const params = new URLSearchParams({ lawdCd: sigunguCode, months: period });
       if (aptName.trim()) params.set("aptName", aptName.trim());
+      if (umdName.trim()) params.set("umdName", umdName.trim());
       if (areaMin.trim()) params.set("areaMin", areaMin.trim());
       if (areaMax.trim()) params.set("areaMax", areaMax.trim());
 
@@ -109,8 +111,8 @@ export function PriceLookupSection() {
   };
 
   const handleReset = () => {
-    setSido(""); setSigunguCode(""); setAptName(""); setAreaMin(""); setAreaMax("");
-    setPeriod("6");
+    setSido(""); setSigunguCode(""); setUmdName(""); setAptName("");
+    setAreaMin(""); setAreaMax(""); setPeriod("6");
     setResult(null); setResultMeta(null); setError("");
     setInsight(null); setInsightError("");
   };
@@ -166,17 +168,23 @@ export function PriceLookupSection() {
             </div>
           </div>
 
-          {/* 단지·평형 */}
+          {/* 주소·단지·평형 좁히기 */}
           <div>
             <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
               <Home className="w-3.5 h-3.5 text-primary" />
-              단지·평형 (시세를 좁힐 단지)
+              주소·단지·평형 좁히기 (둘 중 하나만 입력해도 됨)
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">법정동 / 읍·면·동 (부분일치)</Label>
+                <Input value={umdName} onChange={(e) => setUmdName(e.target.value)} placeholder="예: 고덕동, 잠실동" />
+              </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">단지명 (부분일치)</Label>
                 <Input value={aptName} onChange={(e) => setAptName(e.target.value)} placeholder="예: 래미안힐스테이트" />
               </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">전용면적 ≥ (㎡)</Label>
                 <Input type="number" value={areaMin} onChange={(e) => setAreaMin(e.target.value)} placeholder="예: 80" />
@@ -187,7 +195,7 @@ export function PriceLookupSection() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              ※ 단지명에 "래미안" 입력 → "래미안힐스테이트고덕"도 매칭. 84㎡ ≈ 34평.
+              ※ 부분일치: "고덕동" 입력 → 고덕동 거래만 / "래미안" 입력 → 래미안힐스테이트고덕도 매칭. 둘 다 입력 시 AND 조건. 84㎡ ≈ 34평.
             </p>
           </div>
 

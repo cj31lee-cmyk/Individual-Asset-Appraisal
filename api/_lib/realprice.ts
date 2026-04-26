@@ -55,7 +55,8 @@ export interface RealpriceResult {
 export interface RealpriceQuery {
   lawdCd: string;
   months: string[];   // ["202503", ...] (YYYYMM)
-  aptName?: string;   // substring 매칭 (공백·대소문자 무시)
+  aptName?: string;   // 단지명 substring (공백·대소문자 무시)
+  umdName?: string;   // 법정동(읍면동) substring — 예: "고덕동"
   areaMin?: number;   // ㎡ 이상
   areaMax?: number;   // ㎡ 이하
 }
@@ -95,6 +96,10 @@ export async function fetchRealprice(
     const needle = normalize(query.aptName);
     filtered = filtered.filter((it) => normalize(it.aptNm).includes(needle));
   }
+  if (query.umdName) {
+    const needle = normalize(query.umdName);
+    filtered = filtered.filter((it) => normalize(it.umdNm).includes(needle));
+  }
   if (query.areaMin !== undefined) {
     filtered = filtered.filter((it) => it.excluUseAr >= query.areaMin!);
   }
@@ -102,15 +107,19 @@ export async function fetchRealprice(
     filtered = filtered.filter((it) => it.excluUseAr <= query.areaMax!);
   }
 
+  // 단지명 또는 법정동 필터가 있으면 complex 카드 활성화
+  const hasComplexFilter = !!(query.aptName || query.umdName);
+  const complexLabel = [query.aptName, query.umdName].filter(Boolean).join(" / ");
+
   return {
     lawdCd: query.lawdCd,
     monthsQueried: query.months,
     totalFetched: allItems.length,
     totalAfterFilter: filtered.length,
     area: computeAreaStats(allItems),
-    complex: query.aptName ? computeComplexStats(filtered, query.aptName) : null,
+    complex: hasComplexFilter ? computeComplexStats(filtered, complexLabel) : null,
     areaCorrection: correctMarketStats(allItems),
-    complexCorrection: query.aptName && filtered.length > 0 ? correctMarketStats(filtered) : null,
+    complexCorrection: hasComplexFilter && filtered.length > 0 ? correctMarketStats(filtered) : null,
   };
 }
 

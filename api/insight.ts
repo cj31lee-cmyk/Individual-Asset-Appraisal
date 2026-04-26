@@ -1,34 +1,39 @@
-// Vercel serverless function — Claude로 보정 결과 자연어 인사이트 생성.
+// Vercel serverless — /api/insight (POST)
+// 표준 Node http (req, res) 스타일. dev 미들웨어와 동일 패턴.
 
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { generateInsight, type ClaudeInsightInput } from "../src/server/claude";
 
-interface JsonBodyRequest {
-  body: ClaudeInsightInput | string | undefined;
-  method?: string;
-}
-
-interface JsonResponse {
-  status: (code: number) => JsonResponse;
-  json: (body: unknown) => void;
-}
-
-export default async function handler(req: JsonBodyRequest, res: JsonResponse) {
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
   try {
     if (req.method !== "POST") {
-      return res.status(405).json({ error: "POST only" });
+      res.statusCode = 405;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ error: "POST only" }));
+      return;
     }
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: "ANTHROPIC_API_KEY not configured" });
+      res.statusCode = 500;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }));
+      return;
     }
-    const body: ClaudeInsightInput =
-      typeof req.body === "string" ? JSON.parse(req.body) : (req.body as ClaudeInsightInput);
-    if (!body || typeof body !== "object" || !body.region) {
-      return res.status(400).json({ error: "Invalid input — region/surfaceMean required" });
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const body = JSON.parse(Buffer.concat(chunks).toString("utf-8")) as ClaudeInsightInput;
+    if (!body?.region) {
+      res.statusCode = 400;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ error: "region required" }));
+      return;
     }
     const result = await generateInsight(body, apiKey);
-    res.status(200).json(result);
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify(result));
   } catch (e) {
-    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+    res.statusCode = 500;
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }));
   }
 }

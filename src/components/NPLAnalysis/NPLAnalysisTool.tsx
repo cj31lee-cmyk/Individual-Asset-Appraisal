@@ -8,10 +8,11 @@ import { VerdictSection } from "./VerdictSection";
 import { ExcelUpload } from "./ExcelUpload";
 import { BulkTableView } from "./BulkTableView";
 import { ReportView } from "./ReportView";
+import { MarketAnalysisSection } from "./MarketAnalysisSection";
 import { HistoryDialog } from "./HistoryDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Landmark, Sparkles, ChevronLeft, ChevronRight, FileSpreadsheet, ClipboardList, TableProperties, Printer, Save, History, Download, FileText, RotateCcw } from "lucide-react";
+import { Landmark, Sparkles, ChevronLeft, ChevronRight, FileSpreadsheet, ClipboardList, TableProperties, Printer, Save, History, Download, FileText, RotateCcw, TrendingUp } from "lucide-react";
 import { saveCurrent, loadCurrent, saveSnapshot } from "./historyStorage";
 import { exportToExcel } from "./excelExport";
 import { toast } from "sonner";
@@ -203,7 +204,7 @@ export function NPLAnalysisTool() {
 
           <main className="max-w-7xl mx-auto px-4 py-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="grid w-full max-w-xl grid-cols-3 no-print">
+              <TabsList className="grid w-full max-w-4xl grid-cols-4 no-print">
                 <TabsTrigger value="detail" className="gap-1.5">
                   <ClipboardList className="w-4 h-4" />
                   상세 분석
@@ -215,6 +216,10 @@ export function NPLAnalysisTool() {
                 <TabsTrigger value="report" className="gap-1.5">
                   <FileText className="w-4 h-4" />
                   보고
+                </TabsTrigger>
+                <TabsTrigger value="market" className="gap-1.5 text-xs whitespace-nowrap">
+                  <TrendingUp className="w-4 h-4 flex-shrink-0" />
+                  NPL 시세 &amp; 낙찰가율 AI 분석 시스템
                 </TabsTrigger>
               </TabsList>
 
@@ -228,6 +233,10 @@ export function NPLAnalysisTool() {
 
               <TabsContent value="report" className="space-y-4">
                 <ReportView cases={bulkCases} />
+              </TabsContent>
+
+              <TabsContent value="market" className="space-y-4">
+                <MarketAnalysisSection />
               </TabsContent>
 
               <TabsContent value="detail" className="space-y-6" onKeyDown={handleEnterAsTab}>
@@ -263,6 +272,17 @@ export function NPLAnalysisTool() {
 
                 <PurchaseInfoSection data={current.purchaseInfo} onChange={(d) => updateCurrent({ purchaseInfo: d })} />
                 <PriceAnalysisSection data={current.priceAnalysis} purchaseInfo={current.purchaseInfo} params={current.params} onChange={(d) => updateCurrent({ priceAnalysis: d })} />
+
+                {/* 매입가격 분석정보 아래 — AI 시세·낙찰가율 (별도 조회 폼) */}
+                <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4 no-print">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-base">🤖</span>
+                    <h3 className="text-sm font-semibold text-foreground">AI 시세·낙찰가율 (참고용)</h3>
+                    <span className="text-xs text-muted-foreground">— 별도 조회. 사건 정보 자동 연동은 추후 추가</span>
+                  </div>
+                  <MarketAnalysisSection />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <RightsSection items={current.rights} onChange={(items) => updateCurrent({ rights: items })} />
                   <ParamsSection data={current.params} priceAnalysis={current.priceAnalysis} onChange={(d) => updateCurrent({ params: d })} />

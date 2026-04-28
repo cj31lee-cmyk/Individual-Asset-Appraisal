@@ -272,17 +272,6 @@ export function NPLAnalysisTool() {
 
                 <PurchaseInfoSection data={current.purchaseInfo} onChange={(d) => updateCurrent({ purchaseInfo: d })} />
                 <PriceAnalysisSection data={current.priceAnalysis} purchaseInfo={current.purchaseInfo} params={current.params} onChange={(d) => updateCurrent({ priceAnalysis: d })} />
-
-                {/* 매입가격 분석정보 아래 — AI 시세·낙찰가율 (별도 조회 폼) */}
-                <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4 no-print">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-base">🤖</span>
-                    <h3 className="text-sm font-semibold text-foreground">AI 시세·낙찰가율 (참고용)</h3>
-                    <span className="text-xs text-muted-foreground">— 별도 조회. 사건 정보 자동 연동은 추후 추가</span>
-                  </div>
-                  <MarketAnalysisSection />
-                </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <RightsSection items={current.rights} onChange={(items) => updateCurrent({ rights: items })} />
                   <ParamsSection data={current.params} priceAnalysis={current.priceAnalysis} onChange={(d) => updateCurrent({ params: d })} />

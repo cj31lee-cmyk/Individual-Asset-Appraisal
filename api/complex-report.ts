@@ -1,7 +1,7 @@
 // Vercel serverless — /api/complex-report (POST)
 // Web Standards (Request/Response). 단지 종합 리포트 (Sonnet 4.6).
 
-import { generateComplexReport, type ComplexReportInput } from "./_lib/claude";
+import { generateComplexReport, type ComplexReportInput } from "./_lib/claude.js";
 
 export default async function handler(req: Request): Promise<Response> {
   try {

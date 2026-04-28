@@ -1,7 +1,7 @@
 // 룰 기반 보정 로직 — 이상치 제거, 직거래 제외, 시간 가중치, 추세 분석.
 // LLM 없이 통계 알고리즘으로 "보정 시세 / 보정 낙찰가율 / 신뢰도" 산출.
 
-import type { RealpriceItem } from "./realprice";
+import type { RealpriceItem } from "./realprice.js";
 
 const SQM_PER_PYEONG = 3.305785;
 const HALF_LIFE_MONTHS = 6;        // 시간 가중치 반감기

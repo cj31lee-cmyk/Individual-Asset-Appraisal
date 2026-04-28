@@ -2,7 +2,7 @@
 // 서버 전용 (dev 미들웨어 + Vercel serverless 모두에서 import).
 // 클라이언트 코드에서 import 금지 — 번들에 들어가면 API 키가 노출될 수 있음.
 
-import { correctMarketStats, type CorrectionResult } from "./correction";
+import { correctMarketStats, type CorrectionResult } from "./correction.js";
 
 const API_BASE =
   "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade";

@@ -1,7 +1,7 @@
 // Vercel serverless — /api/realprice
 // Web Standards (Request/Response) — Vercel Node runtime에서 가장 호환성 높음.
 
-import { fetchRealprice, lastNMonths } from "./_lib/realprice";
+import { fetchRealprice, lastNMonths } from "./_lib/realprice.js";
 
 export default async function handler(req: Request): Promise<Response> {
   try {

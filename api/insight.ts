@@ -1,7 +1,7 @@
 // Vercel serverless — /api/insight (POST)
 // Web Standards (Request/Response).
 
-import { generateInsight, type ClaudeInsightInput } from "./_lib/claude.js";
+import { generateInsight, type ClaudeInsightInput } from "./lib/claude.js";
 
 export default async function handler(req: Request): Promise<Response> {
   try {

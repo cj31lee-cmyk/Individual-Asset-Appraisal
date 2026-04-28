@@ -1,25 +1,18 @@
 // Vercel serverless — /api/realprice
-// 표준 Node http (req, res) 스타일. dev 미들웨어와 동일 패턴.
+// Web Standards (Request/Response) — Vercel Node runtime에서 가장 호환성 높음.
 
-import type { IncomingMessage, ServerResponse } from "node:http";
 import { fetchRealprice, lastNMonths } from "./_lib/realprice";
 
-export default async function handler(req: IncomingMessage, res: ServerResponse) {
+export default async function handler(req: Request): Promise<Response> {
   try {
-    const url = new URL(req.url ?? "/", "http://localhost");
+    const url = new URL(req.url);
     const lawdCd = url.searchParams.get("lawdCd") ?? "";
     if (!/^\d{5}$/.test(lawdCd)) {
-      res.statusCode = 400;
-      res.setHeader("content-type", "application/json");
-      res.end(JSON.stringify({ error: "lawdCd (5-digit) required" }));
-      return;
+      return json({ error: "lawdCd (5-digit) required" }, 400);
     }
     const apiKey = process.env.MOLIT_API_KEY;
     if (!apiKey) {
-      res.statusCode = 500;
-      res.setHeader("content-type", "application/json");
-      res.end(JSON.stringify({ error: "MOLIT_API_KEY not configured" }));
-      return;
+      return json({ error: "MOLIT_API_KEY not configured" }, 500);
     }
     const monthCount = Math.min(
       Math.max(parseInt(url.searchParams.get("months") ?? "6", 10) || 6, 1),
@@ -45,11 +38,15 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       },
       apiKey,
     );
-    res.setHeader("content-type", "application/json");
-    res.end(JSON.stringify(result));
+    return json(result, 200);
   } catch (e) {
-    res.statusCode = 500;
-    res.setHeader("content-type", "application/json");
-    res.end(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }));
+    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }
+}
+
+function json(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
 }

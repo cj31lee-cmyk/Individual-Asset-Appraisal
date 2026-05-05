@@ -1,9 +1,9 @@
 // Claude API 호출 — 보정 결과 → 4섹션 구조화 분석.
 // 서버 전용. 모델은 Haiku 4.5.
 
-const CLAUDE_API = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-haiku-4-5-20251001";          // 4섹션 인사이트용 (저렴)
-const REPORT_MODEL = "claude-sonnet-4-6";           // 단지 종합 리포트용 (풍부한 분석)
+export const CLAUDE_API = "https://api.anthropic.com/v1/messages";
+const MODEL = "claude-haiku-4-5-20251001";              // 4섹션 인사이트용 (저렴)
+export const REPORT_MODEL = "claude-sonnet-4-6";        // 단지 종합 리포트용 (풍부한 분석)
 
 export interface ClaudeInsightInput {
   region: string;
@@ -339,7 +339,7 @@ export async function generateComplexReport(
   return { markdown: raw.trim(), raw, modelUsed: REPORT_MODEL };
 }
 
-function buildReportPrompt(i: ComplexReportInput): string {
+export function buildReportPrompt(i: ComplexReportInput): string {
   const lines: string[] = [];
   lines.push(
     "당신은 한국 부동산 NPL(부실채권) 전문 애널리스트입니다.",

@@ -178,9 +178,43 @@ export function PriceLookupSection() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
-      setReport(json.markdown ?? "");
+      if (!res.ok) {
+        let errMsg = `HTTP ${res.status}`;
+        try {
+          const j = await res.json();
+          errMsg = j.error ?? errMsg;
+        } catch { /* 비-JSON 응답이면 status만 노출 */ }
+        throw new Error(errMsg);
+      }
+      if (!res.body) throw new Error("응답 본문이 비어있습니다");
+
+      // Anthropic SSE 스트림 파싱: content_block_delta.delta.text 누적해서 마크다운 실시간 표시.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = "";
+      let markdown = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        sseBuffer += decoder.decode(value, { stream: true });
+        const events = sseBuffer.split("\n\n");
+        sseBuffer = events.pop() ?? "";  // 마지막 미완성 이벤트는 버퍼에 남김
+        for (const ev of events) {
+          for (const line of ev.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            const dataStr = line.slice(6).trim();
+            if (!dataStr || dataStr === "[DONE]") continue;
+            let obj: { type?: string; delta?: { type?: string; text?: string }; error?: { message?: string } };
+            try { obj = JSON.parse(dataStr); } catch { continue; }
+            if (obj.type === "content_block_delta" && obj.delta?.type === "text_delta" && typeof obj.delta.text === "string") {
+              markdown += obj.delta.text;
+              setReport(markdown);
+            } else if (obj.type === "error") {
+              throw new Error(obj.error?.message ?? "Claude 스트림 에러");
+            }
+          }
+        }
+      }
     } catch (e) {
       setReportError(e instanceof Error ? e.message : String(e));
     } finally {

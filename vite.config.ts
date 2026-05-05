@@ -3,8 +3,9 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { fetchRealprice, lastNMonths } from "./api/lib/realprice.js";
-import { generateInsight, generateComplexReport, type ClaudeInsightInput, type ComplexReportInput } from "./api/lib/claude.js";
+import { generateInsight, type ClaudeInsightInput } from "./api/lib/claude.js";
 import diagHandler from "./api/diag.js";
+import complexReportHandler from "./api/complex-report.js";
 
 // Dev 환경에서 /api/realprice를 처리. Vercel production에서는 api/realprice.ts가 같은 일을 함.
 function realpriceDevMiddleware(): Plugin {
@@ -26,34 +27,29 @@ function realpriceDevMiddleware(): Plugin {
         }
       });
 
-      // 단지 종합 리포트 — POST /api/complex-report (Sonnet 4.6)
+      // 단지 종합 리포트 — POST /api/complex-report (Sonnet 4.6 streaming SSE)
+      // Edge 핸들러를 그대로 호출하고 Anthropic SSE 스트림을 forward.
       server.middlewares.use("/api/complex-report", async (req, res) => {
         try {
-          if (req.method !== "POST") {
-            res.statusCode = 405;
-            res.setHeader("content-type", "application/json");
-            res.end(JSON.stringify({ error: "POST only" }));
-            return;
-          }
-          const apiKey = process.env.ANTHROPIC_API_KEY;
-          if (!apiKey) {
-            res.statusCode = 500;
-            res.setHeader("content-type", "application/json");
-            res.end(JSON.stringify({ error: "ANTHROPIC_API_KEY not set in .env.local" }));
-            return;
-          }
           const chunks: Buffer[] = [];
           for await (const chunk of req) chunks.push(chunk as Buffer);
-          const body = JSON.parse(Buffer.concat(chunks).toString("utf-8")) as ComplexReportInput;
-          if (!body?.region || !body?.complexName) {
-            res.statusCode = 400;
-            res.setHeader("content-type", "application/json");
-            res.end(JSON.stringify({ error: "region and complexName required" }));
-            return;
+          const fakeReq = new Request(`http://localhost${req.url ?? "/"}`, {
+            method: req.method,
+            headers: { "content-type": "application/json" },
+            body: chunks.length > 0 ? Buffer.concat(chunks) : undefined,
+          });
+          const response = await complexReportHandler(fakeReq);
+          res.statusCode = response.status;
+          response.headers.forEach((v, k) => res.setHeader(k, v));
+          if (response.body) {
+            const reader = response.body.getReader();
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              res.write(value);
+            }
           }
-          const result = await generateComplexReport(body, apiKey);
-          res.setHeader("content-type", "application/json");
-          res.end(JSON.stringify(result));
+          res.end();
         } catch (e) {
           res.statusCode = 500;
           res.setHeader("content-type", "application/json");

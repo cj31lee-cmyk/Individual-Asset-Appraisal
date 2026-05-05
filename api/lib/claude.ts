@@ -324,7 +324,7 @@ export async function generateComplexReport(
     },
     body: JSON.stringify({
       model: REPORT_MODEL,
-      max_tokens: 4000,
+      max_tokens: 3500,
       messages: [{ role: "user", content: prompt }],
     }),
   });

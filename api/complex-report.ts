@@ -3,7 +3,7 @@
 
 import { generateComplexReport, type ComplexReportInput } from "./lib/claude.js";
 
-export const config = { runtime: "nodejs20.x" };
+export const config = { runtime: "nodejs" };
 
 export default async function handler(req: Request): Promise<Response> {
   try {

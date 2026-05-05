@@ -2,7 +2,7 @@
 // 시세 조회가 실패할 때 /api/diag 한 번 열어서 정확한 원인 파악.
 import { lastNMonths } from "./lib/realprice.js";
 
-export const config = { runtime: "nodejs20.x" };
+export const config = { runtime: "edge" };
 
 export default async function handler(_req: Request): Promise<Response> {
   const now = new Date();

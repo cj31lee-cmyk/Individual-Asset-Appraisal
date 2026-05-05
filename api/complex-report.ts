@@ -3,6 +3,8 @@
 
 import { generateComplexReport, type ComplexReportInput } from "./lib/claude.js";
 
+// ⚠️ 다른 함수와 달리 nodejs 유지 — Sonnet 4.6이 Edge 25s 한도(Hobby)를 넘을 수 있음.
+// runtime 변경/삭제 금지 — 2026-05-05 cold start hang 해결 (commit dccb6c5). 자세한 건 api/ping.ts 참고.
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req: Request): Promise<Response> {

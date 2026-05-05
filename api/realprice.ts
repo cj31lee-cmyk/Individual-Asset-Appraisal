@@ -3,6 +3,7 @@
 
 import { fetchRealprice, lastNMonths } from "./lib/realprice.js";
 
+// ⚠️ runtime 절대 변경 금지 — 2026-05-05 cold start hang 해결 commit dccb6c5. 자세한 건 api/ping.ts 참고.
 export const config = { runtime: "edge" };
 
 export default async function handler(req: Request): Promise<Response> {

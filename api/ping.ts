@@ -1,4 +1,5 @@
 // 의존성 0, 외부 호출 0 — Vercel Function 자체가 동작하는지 검증용.
+// ⚠️ runtime 절대 변경 금지 — 2026-05-05에 nodejs 자동감지 cold start hang 문제 해결됨 (commit dccb6c5).
 export const config = { runtime: "edge" };
 
 export default async function handler(req: Request): Promise<Response> {

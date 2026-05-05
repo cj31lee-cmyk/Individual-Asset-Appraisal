@@ -2,6 +2,7 @@
 // 시세 조회가 실패할 때 /api/diag 한 번 열어서 정확한 원인 파악.
 import { lastNMonths } from "./lib/realprice.js";
 
+// ⚠️ runtime 절대 변경 금지 — 2026-05-05 cold start hang 해결 commit dccb6c5. 자세한 건 api/ping.ts 참고.
 export const config = { runtime: "edge" };
 
 export default async function handler(_req: Request): Promise<Response> {

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Sparkles, TrendingUp, MapPin } from "lucide-react";
 import { FormattedNumberInput } from "./FormattedNumberInput";
 import { SIDO_LIST, SIGUNGU_BY_SIDO, type SidoName } from "@/data/regionCodes";
+import { SIDO_BID_RATES, DEFAULT_NATIONAL_BID_RATE } from "@/data/bidRates";
 import {
   PERIODS,
   formatManwon,
@@ -20,7 +21,6 @@ import {
   type ClaudeInsight,
 } from "./marketShared";
 
-const DEFAULT_BID_RATE = 80;
 // 동 단위 평균을 신뢰할 수 있는 최소 표본수 — 미만이면 자동으로 구 평균으로 fallback.
 const UMD_MIN_SAMPLE = 10;
 const UMD_ALL = "__all";
@@ -32,7 +32,7 @@ export function RegionBidRateSection() {
   const [period, setPeriod] = useState<string>("12");
   // 감정가는 원 단위로 사용자 입력 (자동 천단위 콤마). 내부 계산은 만원 단위로 변환.
   const [appraisal, setAppraisal] = useState<number>(0);
-  const [assumedRate, setAssumedRate] = useState<string>(String(DEFAULT_BID_RATE));
+  const [assumedRate, setAssumedRate] = useState<string>(String(DEFAULT_NATIONAL_BID_RATE));
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
@@ -144,7 +144,7 @@ export function RegionBidRateSection() {
 
   const handleReset = () => {
     setSido(""); setSigunguCode(""); setUmdName(""); setPeriod("12");
-    setAppraisal(0); setAssumedRate(String(DEFAULT_BID_RATE));
+    setAppraisal(0); setAssumedRate(String(DEFAULT_NATIONAL_BID_RATE));
     setResult(null); setResultMeta(null); setError("");
     setInsight(null); setInsightError("");
   };
@@ -180,9 +180,12 @@ export function RegionBidRateSection() {
               <Select
                 value={sido}
                 onValueChange={(v) => {
-                  setSido(v as SidoName);
+                  const next = v as SidoName;
+                  setSido(next);
                   setSigunguCode("");
                   setUmdName("");
+                  // 시·도별 평균 낙찰가율 자동 prefill (사용자가 이후 수정 가능).
+                  setAssumedRate(String(SIDO_BID_RATES[next] ?? DEFAULT_NATIONAL_BID_RATE));
                 }}
               >
                 <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
@@ -318,8 +321,13 @@ export function RegionBidRateSection() {
                   <FormattedNumberInput value={appraisal} onChange={setAppraisal} placeholder="예: 800,000,000" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">가정 낙찰가율 (%)</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    평균 낙찰가율 (%) <span className="text-[10px] text-primary">· 지역별 자동</span>
+                  </Label>
                   <Input type="number" value={assumedRate} onChange={(e) => setAssumedRate(e.target.value)} placeholder="80" />
+                  <p className="text-[10px] text-muted-foreground leading-tight">
+                    ※ 법원경매 통계 기반 추정치 — 물건별 실제 낙찰가율은 다를 수 있습니다. 직접 수정 가능.
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">

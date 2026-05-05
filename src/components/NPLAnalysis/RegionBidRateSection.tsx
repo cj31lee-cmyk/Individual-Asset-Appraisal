@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Sparkles, TrendingUp, MapPin } from "lucide-react";
+import { FormattedNumberInput } from "./FormattedNumberInput";
 import { SIDO_LIST, SIGUNGU_BY_SIDO, type SidoName } from "@/data/regionCodes";
 import {
   PERIODS,
@@ -29,7 +30,8 @@ export function RegionBidRateSection() {
   const [sigunguCode, setSigunguCode] = useState<string>("");
   const [umdName, setUmdName] = useState<string>("");
   const [period, setPeriod] = useState<string>("12");
-  const [appraisal, setAppraisal] = useState<string>("");
+  // 감정가는 원 단위로 사용자 입력 (자동 천단위 콤마). 내부 계산은 만원 단위로 변환.
+  const [appraisal, setAppraisal] = useState<number>(0);
   const [assumedRate, setAssumedRate] = useState<string>(String(DEFAULT_BID_RATE));
 
   const [loading, setLoading] = useState(false);
@@ -142,17 +144,18 @@ export function RegionBidRateSection() {
 
   const handleReset = () => {
     setSido(""); setSigunguCode(""); setUmdName(""); setPeriod("12");
-    setAppraisal(""); setAssumedRate(String(DEFAULT_BID_RATE));
+    setAppraisal(0); setAssumedRate(String(DEFAULT_BID_RATE));
     setResult(null); setResultMeta(null); setError("");
     setInsight(null); setInsightError("");
   };
 
-  const appraisalNum = parseFloat(appraisal) || 0;
+  // 사용자 입력은 원 단위 → 시세 데이터(만원)와 맞추기 위해 1만으로 나눔.
+  const appraisalManwon = appraisal / 10000;
   const rateNum = parseFloat(assumedRate) || 0;
-  const estimatedBidPrice = Math.round(appraisalNum * (rateNum / 100));
+  const estimatedBidPrice = Math.round(appraisalManwon * (rateNum / 100));
   const appraisalVsMarketPct =
-    refMarketAmount > 0 && appraisalNum > 0
-      ? Math.round((appraisalNum / refMarketAmount) * 1000) / 10
+    refMarketAmount > 0 && appraisalManwon > 0
+      ? Math.round((appraisalManwon / refMarketAmount) * 1000) / 10
       : 0;
 
   return (
@@ -304,15 +307,15 @@ export function RegionBidRateSection() {
               </p>
             </CardHeader>
             <CardContent className="pt-5 space-y-5">
-              {appraisalNum > 0 && rateNum > 0 ? (
+              {appraisalManwon > 0 && rateNum > 0 ? (
                 <MainMetric value={formatManwon(estimatedBidPrice)} label="추정 낙찰가" accent />
               ) : (
                 <MainMetric value="—" label="감정가 입력 후 계산" muted />
               )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-primary/15">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">감정가 (만원)</Label>
-                  <Input type="number" value={appraisal} onChange={(e) => setAppraisal(e.target.value)} placeholder="예: 80000" />
+                  <Label className="text-xs text-muted-foreground">감정가 (원)</Label>
+                  <FormattedNumberInput value={appraisal} onChange={setAppraisal} placeholder="예: 800,000,000" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">가정 낙찰가율 (%)</Label>
@@ -327,7 +330,7 @@ export function RegionBidRateSection() {
                   </div>
                 </div>
               </div>
-              {appraisalNum > 0 && rateNum > 0 && (
+              {appraisalManwon > 0 && rateNum > 0 && (
                 <>
                   <SecondaryRow
                     items={[
@@ -368,8 +371,8 @@ export function RegionBidRateSection() {
             const diffPct = surfaceMean > 0
               ? Math.round(((correction.correctedMeanAmount - surfaceMean) / surfaceMean) * 1000) / 10
               : 0;
-            const correctedBidRatePct = appraisalNum > 0 && rateNum > 0 && correction.correctedMeanAmount > 0
-              ? Math.round((appraisalNum * (rateNum / 100) / correction.correctedMeanAmount) * 1000) / 10
+            const correctedBidRatePct = appraisalManwon > 0 && rateNum > 0 && correction.correctedMeanAmount > 0
+              ? Math.round((appraisalManwon * (rateNum / 100) / correction.correctedMeanAmount) * 1000) / 10
               : null;
             const trendIcon = correction.trendDirection === "up" ? "↗" : correction.trendDirection === "down" ? "↘" : "→";
             const trendText = correction.trendDirection === "up" ? "상승" : correction.trendDirection === "down" ? "하락" : "보합";

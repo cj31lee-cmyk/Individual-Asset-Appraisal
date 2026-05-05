@@ -20,10 +20,14 @@ import {
 } from "./marketShared";
 
 const DEFAULT_BID_RATE = 80;
+// 동 단위 평균을 신뢰할 수 있는 최소 표본수 — 미만이면 자동으로 구 평균으로 fallback.
+const UMD_MIN_SAMPLE = 10;
+const UMD_ALL = "__all";
 
 export function RegionBidRateSection() {
   const [sido, setSido] = useState<SidoName | "">("");
   const [sigunguCode, setSigunguCode] = useState<string>("");
+  const [umdName, setUmdName] = useState<string>("");
   const [period, setPeriod] = useState<string>("12");
   const [appraisal, setAppraisal] = useState<string>("");
   const [assumedRate, setAssumedRate] = useState<string>(String(DEFAULT_BID_RATE));
@@ -31,7 +35,7 @@ export function RegionBidRateSection() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [result, setResult] = useState<RealpriceResult | null>(null);
-  const [resultMeta, setResultMeta] = useState<{ regionLabel: string; periodLabel: string } | null>(null);
+  const [resultMeta, setResultMeta] = useState<{ regionLabel: string; periodLabel: string; umdLabel: string } | null>(null);
 
   const [insight, setInsight] = useState<ClaudeInsight | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
@@ -44,18 +48,21 @@ export function RegionBidRateSection() {
   );
   const canSearch = !!(sido && sigunguCode && period);
 
-  const handleSearch = async () => {
+  const handleSearch = async (overrideUmd?: string) => {
     if (!canSearch) return;
-    setLoading(true); setError(""); setResult(null);
+    const useUmd = overrideUmd !== undefined ? overrideUmd : umdName;
+    setLoading(true); setError("");
     setInsight(null); setInsightError("");
     try {
       const params = new URLSearchParams({ lawdCd: sigunguCode, months: period });
+      if (useUmd) params.set("umdName", useUmd);
       const res = await fetch(`/api/realprice?${params.toString()}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
       setResult(json);
       setResultMeta({
         regionLabel: `${sido} ${sigunguName}`,
+        umdLabel: useUmd,
         periodLabel: PERIODS.find((p) => p.value === period)?.label ?? "",
       });
     } catch (e) {
@@ -65,14 +72,36 @@ export function RegionBidRateSection() {
     }
   };
 
+  // 동 선택 변경 — 첫 검색 후에만 자동 재호출.
+  const handleUmdChange = (next: string) => {
+    setUmdName(next);
+    if (result) handleSearch(next);
+  };
+
+  // 동 선택 + 표본 충분 → 동 평균 사용. 그 외 → 구 평균 사용.
+  const usingUmd = !!umdName && !!result?.complex && result.complex.count >= UMD_MIN_SAMPLE;
+  const refMarketAmount = usingUmd
+    ? (result?.complex?.meanAmount ?? 0)
+    : (result?.area.meanAmount ?? 0);
+  const refCorrection = usingUmd
+    ? (result?.complexCorrection ?? null)
+    : (result?.areaCorrection ?? null);
+  const refLabel = usingUmd && resultMeta?.umdLabel
+    ? `${resultMeta.regionLabel} ${resultMeta.umdLabel}`
+    : (resultMeta?.regionLabel ?? "");
+  const fallbackReason = umdName && result?.complex && result.complex.count < UMD_MIN_SAMPLE
+    ? `${umdName} 거래 ${result.complex.count}건 부족 (최소 ${UMD_MIN_SAMPLE}건) → 구 평균으로 산출`
+    : "";
+
   const handleInsight = async () => {
     if (!result || !resultMeta) return;
-    const correction = result.areaCorrection;
-    const surfaceMean = result.area.meanAmount;
+    const correction = refCorrection;
+    const surfaceMean = refMarketAmount;
     if (!correction || !surfaceMean) return;
     setInsightLoading(true); setInsightError(""); setInsight(null);
     try {
-      const itemsForClaude = result.area.recent.slice(0, 30).map((it) => ({
+      const sourceItems = usingUmd && result.complex ? result.complex.items : result.area.recent;
+      const itemsForClaude = sourceItems.slice(0, 30).map((it) => ({
         aptNm: it.aptNm,
         umdNm: it.umdNm,
         excluUseAr: it.excluUseAr,
@@ -84,7 +113,7 @@ export function RegionBidRateSection() {
         dealingGbn: it.dealingGbn,
       }));
       const body = {
-        region: resultMeta.regionLabel,
+        region: refLabel,
         period: resultMeta.periodLabel,
         surfaceMean,
         correctedMean: correction.correctedMeanAmount,
@@ -112,7 +141,7 @@ export function RegionBidRateSection() {
   };
 
   const handleReset = () => {
-    setSido(""); setSigunguCode(""); setPeriod("12");
+    setSido(""); setSigunguCode(""); setUmdName(""); setPeriod("12");
     setAppraisal(""); setAssumedRate(String(DEFAULT_BID_RATE));
     setResult(null); setResultMeta(null); setError("");
     setInsight(null); setInsightError("");
@@ -121,7 +150,6 @@ export function RegionBidRateSection() {
   const appraisalNum = parseFloat(appraisal) || 0;
   const rateNum = parseFloat(assumedRate) || 0;
   const estimatedBidPrice = Math.round(appraisalNum * (rateNum / 100));
-  const refMarketAmount = result?.area.meanAmount ?? 0;
   const appraisalVsMarketPct =
     refMarketAmount > 0 && appraisalNum > 0
       ? Math.round((appraisalNum / refMarketAmount) * 1000) / 10
@@ -141,12 +169,19 @@ export function RegionBidRateSection() {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                 <MapPin className="w-3 h-3" />시·도
               </Label>
-              <Select value={sido} onValueChange={(v) => { setSido(v as SidoName); setSigunguCode(""); }}>
+              <Select
+                value={sido}
+                onValueChange={(v) => {
+                  setSido(v as SidoName);
+                  setSigunguCode("");
+                  setUmdName("");
+                }}
+              >
                 <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
                 <SelectContent>
                   {SIDO_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -155,10 +190,34 @@ export function RegionBidRateSection() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">시·군·구</Label>
-              <Select value={sigunguCode} onValueChange={setSigunguCode} disabled={!sido}>
+              <Select
+                value={sigunguCode}
+                onValueChange={(v) => { setSigunguCode(v); setUmdName(""); }}
+                disabled={!sido}
+              >
                 <SelectTrigger><SelectValue placeholder={sido ? "선택" : "시·도 먼저"} /></SelectTrigger>
                 <SelectContent>
                   {sigunguList.map((g) => <SelectItem key={g.code} value={g.code}>{g.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">법정동 (선택)</Label>
+              <Select
+                value={umdName || UMD_ALL}
+                onValueChange={(v) => handleUmdChange(v === UMD_ALL ? "" : v)}
+                disabled={!result?.umdBreakdown?.length}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={result ? "전체 (구 단위)" : "조회 후 선택"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={UMD_ALL}>전체 (구 단위)</SelectItem>
+                  {result?.umdBreakdown.map((u) => (
+                    <SelectItem key={u.umdNm} value={u.umdNm}>
+                      {u.umdNm} ({u.count}건{u.count < UMD_MIN_SAMPLE ? " · 표본부족" : ""})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -171,13 +230,13 @@ export function RegionBidRateSection() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={handleSearch} disabled={!canSearch || loading} className="flex-1 gap-1.5" size="lg">
-                <Search className="w-4 h-4" />
-                {loading ? "조회 중..." : "낙찰가율 조회"}
-              </Button>
-              <Button onClick={handleReset} variant="outline" disabled={loading} size="lg">초기화</Button>
-            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => handleSearch()} disabled={!canSearch || loading} className="flex-1 gap-1.5" size="lg">
+              <Search className="w-4 h-4" />
+              {loading ? "조회 중..." : "낙찰가율 조회"}
+            </Button>
+            <Button onClick={handleReset} variant="outline" disabled={loading} size="lg">초기화</Button>
           </div>
         </CardContent>
       </Card>
@@ -214,12 +273,21 @@ export function RegionBidRateSection() {
       {result && resultMeta && !loading && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2 text-sm px-1">
-            <span className="font-semibold text-foreground">{resultMeta.regionLabel}</span>
+            <span className="font-semibold text-foreground">{refLabel}</span>
             <span className="text-muted-foreground">·</span>
             <span className="text-muted-foreground">{resultMeta.periodLabel}</span>
             <span className="text-muted-foreground">·</span>
             <span className="text-muted-foreground">전체 거래 {result.totalFetched.toLocaleString()}건</span>
+            {usingUmd && (
+              <Badge variant="default" className="text-xs">동 평균 사용 ({result.complex?.count}건)</Badge>
+            )}
           </div>
+
+          {fallbackReason && (
+            <div className="text-xs px-3 py-2 rounded-md border border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200">
+              ⚠️ {fallbackReason}
+            </div>
+          )}
 
           {/* 카드 ③ 추정 낙찰가율 */}
           <Card className="shadow-sm border-primary/30 bg-primary/5">
@@ -227,7 +295,9 @@ export function RegionBidRateSection() {
               <CardTitle className="flex items-center gap-2 text-base">
                 <span className="text-xl">📈</span>
                 <span>③ 추정 낙찰가율 (시세 기반)</span>
-                <Badge variant="outline" className="ml-auto text-xs font-normal">지역 평균 기준</Badge>
+                <Badge variant="outline" className="ml-auto text-xs font-normal">
+                  {usingUmd ? "동 평균 기준" : "구 평균 기준"}
+                </Badge>
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
                 감정가와 가정 낙찰가율을 입력하면 추정 낙찰가가 자동 계산됩니다.
@@ -249,7 +319,9 @@ export function RegionBidRateSection() {
                   <Input type="number" value={assumedRate} onChange={(e) => setAssumedRate(e.target.value)} placeholder="80" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">기준 시세 (지역 평균)</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    기준 시세 ({usingUmd ? "동 평균" : "구 평균"})
+                  </Label>
                   <div className="h-10 px-3 flex items-center text-sm border rounded-md bg-background">
                     {refMarketAmount > 0 ? formatManwon(refMarketAmount) : "—"}
                   </div>
@@ -284,8 +356,8 @@ export function RegionBidRateSection() {
 
           {/* 카드 ④ AI 보정 낙찰가율 */}
           {(() => {
-            const correction = result.areaCorrection;
-            const surfaceMean = result.area.meanAmount;
+            const correction = refCorrection;
+            const surfaceMean = refMarketAmount;
             if (!correction) {
               return (
                 <Card className="shadow-sm border-dashed bg-muted/30">

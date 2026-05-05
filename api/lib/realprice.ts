@@ -44,6 +44,12 @@ export interface ComplexStats {
   rawMeanAmount: number;
 }
 
+export interface UmdBreakdown {
+  umdNm: string;
+  count: number;
+  meanAmount: number; // 만원, 단순 평균 (드롭다운 표시·fallback 결정용)
+}
+
 export interface RealpriceResult {
   lawdCd: string;
   monthsQueried: string[];
@@ -56,6 +62,8 @@ export interface RealpriceResult {
   complexCorrection: CorrectionResult | null;
   // 그 지역 거래 많은 단지 TOP — 단지명 검색 미스 시 추천용
   topComplexes: { name: string; count: number; umdNm: string }[];
+  // 법정동별 거래수·평균 — 동 드롭다운 채움 + 표본 부족 fallback 결정용
+  umdBreakdown: UmdBreakdown[];
 }
 
 export interface RealpriceQuery {
@@ -127,7 +135,30 @@ export async function fetchRealprice(
     areaCorrection: correctMarketStats(allItems),
     complexCorrection: hasComplexFilter && filtered.length > 0 ? correctMarketStats(filtered) : null,
     topComplexes: getTopComplexes(allItems, 12),
+    umdBreakdown: getUmdBreakdown(allItems),
   };
+}
+
+// 구 안의 법정동별 거래수·평균 집계 — 클라이언트가 동 드롭다운 채움 + fallback 결정에 사용.
+function getUmdBreakdown(items: RealpriceItem[]): UmdBreakdown[] {
+  const counter = new Map<string, { count: number; sumAmount: number }>();
+  for (const it of items) {
+    if (!it.umdNm || it.dealAmount <= 0) continue;
+    const e = counter.get(it.umdNm);
+    if (e) {
+      e.count++;
+      e.sumAmount += it.dealAmount;
+    } else {
+      counter.set(it.umdNm, { count: 1, sumAmount: it.dealAmount });
+    }
+  }
+  return [...counter.entries()]
+    .map(([umdNm, v]) => ({
+      umdNm,
+      count: v.count,
+      meanAmount: Math.round(v.sumAmount / v.count),
+    }))
+    .sort((a, b) => b.count - a.count);
 }
 
 // 단지명 매칭: 양방향 substring + 글자 chunk 매칭으로 사용자 입력 순서 변화·오타 일부 흡수.

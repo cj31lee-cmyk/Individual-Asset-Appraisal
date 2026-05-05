@@ -57,6 +57,12 @@ export interface CorrectionResult {
   cv: number;
 }
 
+export interface UmdBreakdown {
+  umdNm: string;
+  count: number;
+  meanAmount: number;
+}
+
 export interface RealpriceResult {
   lawdCd: string;
   monthsQueried: string[];
@@ -67,6 +73,7 @@ export interface RealpriceResult {
   areaCorrection: CorrectionResult | null;
   complexCorrection: CorrectionResult | null;
   topComplexes: { name: string; count: number; umdNm: string }[];
+  umdBreakdown: UmdBreakdown[];
 }
 
 export interface InsightItem {

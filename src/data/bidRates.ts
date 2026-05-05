@@ -4,8 +4,14 @@
 //
 // 값은 2024~2025년 통상치 기준 보수적 추정. 실제 물건/시기에 따라 ±5~10%p 변동.
 // 정확한 통계가 확보되면 이 파일만 수정하면 전 영역에 반영됨.
+//
+// ⚠️ 시장 변동성: 서울 기준 2021 호황기엔 100%+, 2022 하반기 침체엔 ~75%까지 급락.
+// 즉 단기 변동성이 매우 커서 분기/연 단위로 갱신 필요.
 
 import type { SidoName } from "./regionCodes";
+
+// 데이터 기준 시점 — UI에 노출하여 사용자가 신뢰도 직접 판단 가능.
+export const BID_RATES_LAST_UPDATED = "2024~2025";
 
 export const SIDO_BID_RATES: Record<SidoName, number> = {
   "서울특별시": 87,

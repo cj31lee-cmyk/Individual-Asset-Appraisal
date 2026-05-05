@@ -3,6 +3,8 @@
 
 import { fetchRealprice, lastNMonths } from "./lib/realprice.js";
 
+export const config = { runtime: "nodejs20.x" };
+
 export default async function handler(req: Request): Promise<Response> {
   try {
     const url = new URL(req.url);

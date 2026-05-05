@@ -4,12 +4,28 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { fetchRealprice, lastNMonths } from "./api/lib/realprice.js";
 import { generateInsight, generateComplexReport, type ClaudeInsightInput, type ComplexReportInput } from "./api/lib/claude.js";
+import diagHandler from "./api/diag.js";
 
 // Dev 환경에서 /api/realprice를 처리. Vercel production에서는 api/realprice.ts가 같은 일을 함.
 function realpriceDevMiddleware(): Plugin {
   return {
     name: "realprice-dev",
     configureServer(server) {
+      // 종합 진단 — GET /api/diag
+      server.middlewares.use("/api/diag", async (req, res) => {
+        try {
+          const fakeReq = new Request(`http://localhost${req.url ?? "/"}`, { method: req.method });
+          const response = await diagHandler(fakeReq);
+          res.statusCode = response.status;
+          res.setHeader("content-type", response.headers.get("content-type") ?? "application/json");
+          res.end(await response.text());
+        } catch (e) {
+          res.statusCode = 500;
+          res.setHeader("content-type", "application/json");
+          res.end(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }));
+        }
+      });
+
       // 단지 종합 리포트 — POST /api/complex-report (Sonnet 4.6)
       server.middlewares.use("/api/complex-report", async (req, res) => {
         try {

@@ -1,4 +1,6 @@
 // 의존성 0, 외부 호출 0 — Vercel Function 자체가 동작하는지 검증용.
+export const config = { runtime: "nodejs20.x" };
+
 export default async function handler(req: Request): Promise<Response> {
   return new Response(
     JSON.stringify({
